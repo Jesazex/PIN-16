@@ -1,187 +1,233 @@
-body {
-    // Align the right column with the left filetree (top: 0, full viewport height).
-    --dg-sidebar-top: 0;
-    --dg-sidebar-container-height: 100%;
-    --dg-toc-max-height: none;
-    // Hug the viewport edges; give freed space to the center content.
-    --dg-filetree-gap: 24px;
-    --dg-sidebar-gap: 24px;
-    --dg-sidebar-container-padding: 0;
-    --dg-filetree-padding: 10px 12px 10px 8px;
-    --dg-content-max-width: 100%;
-    // Pull title + body higher (less empty space above the note).
-    --dg-content-padding-top: 36px;
-    --dg-content-padding-top-mobile: 28px;
-}
-
-// Left filetree flush to the left edge of the viewport.
-.filetree-wrapper {
-    left: 0 !important;
-    width: var(--dg-filetree-width) !important;
-    min-width: var(--dg-filetree-width) !important;
-    justify-content: flex-start !important;
-}
-
-.filetree-sidebar {
-    padding-left: 8px;
-    margin-left: 0;
-
-    // Invert file-list colors: only the open note is accent-colored.
-    .notelink .filename {
-        color: var(--text-muted) !important;
-    }
-
-    .notelink.active-note {
-        border-left-color: var(--text-accent);
-    }
-
-    .notelink.active-note .filename {
-        color: var(--text-accent) !important;
-        font-weight: 600;
-    }
-}
-
-// Right headings list flush to the right edge of the viewport.
-.sidebar {
-    top: 0 !important;
-    height: 100% !important;
-    left: auto !important;
-    right: 0 !important;
-    width: var(--dg-sidebar-max-width);
-    max-width: var(--dg-sidebar-max-width);
-    padding: 10px 0 !important;
-    box-sizing: border-box;
-}
-
-.sidebar-container {
-    height: 100%;
-    min-height: 0;
-    box-sizing: border-box;
-    padding-top: 0;
-    padding-right: 0 !important;
-    padding-bottom: 20px;
-    padding-left: 12px;
-
-    // In-page headings outline: fill the full right column height.
-    .toc {
-        flex: 1 1 auto;
-        min-height: 0;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        padding: 5px 0 5px 5px;
-        margin: 0;
-    }
-
-    .toc-title-container {
-        flex-shrink: 0;
-    }
-
-    .toc-container {
-        flex: 1 1 auto;
-        min-height: 0;
-        max-height: none;
-        overflow-y: auto;
-        margin-bottom: 0;
-    }
-
-    .backlinks {
-        display: none;
-    }
-}
-
-// Central content grows into the space between the edge-hugging sidebars.
-.content:not(.canvas-page) {
-    margin-left: calc(var(--dg-filetree-width) + var(--dg-filetree-gap)) !important;
-    margin-right: calc(var(--dg-sidebar-max-width) + var(--dg-sidebar-gap)) !important;
-    max-width: none !important;
-    width: auto;
-    transition: margin-left 0.2s ease, margin-right 0.2s ease;
-}
-
-@media (max-width: 1400px) {
-    .content:not(.canvas-page) {
-        margin-left: calc(var(--dg-filetree-width) + 16px) !important;
-        margin-right: 20px !important;
-        max-width: none !important;
-    }
-}
-
-@media (max-width: 1000px) {
-    .content:not(.canvas-page) {
-        margin-left: auto !important;
-        margin-right: auto !important;
-        max-width: var(--dg-content-max-width) !important;
-    }
-}
-
-// --- Desktop panel collapse / expand ---------------------------------------
-.panel-collapse-row {
-    display: none;
-    flex-shrink: 0;
-    margin-bottom: 8px;
-}
-
-.panel-collapse-row-left {
-    justify-content: flex-end;
-}
-
-.panel-collapse-row-right {
-    justify-content: flex-start;
-}
-
-.panel-collapse-btn,
-.panel-edge-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    border: 1px solid var(--background-modifier-border, var(--background-secondary-alt, #333));
-    background: var(--background-secondary, #1e1e1e);
-    color: var(--text-muted);
-    border-radius: 6px;
-    padding: 6px 10px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    line-height: 1;
-}
-
-.panel-collapse-btn:hover,
-.panel-edge-toggle:hover {
-    color: var(--text-normal);
-    border-color: var(--text-faint);
-}
-
-.panel-collapse-btn i,
-.panel-collapse-btn svg,
-.panel-edge-toggle i,
-.panel-edge-toggle svg {
-    width: 16px;
-    height: 16px;
-}
-
-.panel-edge-toggle {
-    position: fixed;
-    top: 16px;
-    z-index: 40;
-    padding: 8px 10px;
-}
-
-.panel-edge-toggle-left {
-    left: 10px;
-}
-
-.panel-edge-toggle-right {
-    right: 10px;
-}
-
-.panel-edge-toggle[hidden],
-.panel-collapse-btn[hidden] {
-    display: none !important;
-}
+// Desktop layout customizations from this PR.
+// Mobile (≤1000px) keeps the stock Digital Garden / base styles from main.
 
 @media (min-width: 1001px) {
+    body {
+        // Align the right column with the left filetree (top: 0, full viewport height).
+        --dg-sidebar-top: 0;
+        --dg-sidebar-container-height: 100%;
+        --dg-toc-max-height: none;
+        // Hug the viewport edges; give freed space to the center content.
+        --dg-filetree-gap: 24px;
+        --dg-sidebar-gap: 24px;
+        --dg-sidebar-container-padding: 0;
+        --dg-filetree-padding: 10px 12px 10px 8px;
+        --dg-content-max-width: 100%;
+        // Pull title + body higher (less empty space above the note).
+        --dg-content-padding-top: 36px;
+    }
+
+    // Left filetree flush to the left edge of the viewport.
+    .filetree-wrapper {
+        left: 0 !important;
+        width: var(--dg-filetree-width) !important;
+        min-width: var(--dg-filetree-width) !important;
+        justify-content: flex-start !important;
+    }
+
+    .filetree-sidebar {
+        padding-left: 8px;
+        margin-left: 0;
+
+        // Invert file-list colors: only the open note is accent-colored.
+        .notelink .filename {
+            color: var(--text-muted) !important;
+        }
+
+        .notelink.active-note {
+            border-left-color: var(--text-accent);
+        }
+
+        .notelink.active-note .filename {
+            color: var(--text-accent) !important;
+            font-weight: 600;
+        }
+    }
+
+    // Right headings list flush to the right edge of the viewport.
+    .sidebar {
+        top: 0 !important;
+        height: 100% !important;
+        left: auto !important;
+        right: 0 !important;
+        width: var(--dg-sidebar-max-width);
+        max-width: var(--dg-sidebar-max-width);
+        padding: 10px 0 !important;
+        box-sizing: border-box;
+    }
+
+    .sidebar-container {
+        height: 100%;
+        min-height: 0;
+        box-sizing: border-box;
+        padding-top: 0;
+        padding-right: 0 !important;
+        padding-bottom: 20px;
+        padding-left: 12px;
+
+        // In-page headings outline: fill the full right column height.
+        .toc {
+            flex: 1 1 auto;
+            min-height: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 5px 0 5px 5px;
+            margin: 0;
+        }
+
+        .toc-title-container {
+            flex-shrink: 0;
+        }
+
+        .toc-container {
+            flex: 1 1 auto;
+            min-height: 0;
+            max-height: none;
+            overflow-y: auto;
+            margin-bottom: 0;
+        }
+
+        .backlinks {
+            display: none;
+        }
+    }
+
+    // Central content grows into the space between the edge-hugging sidebars.
+    .content:not(.canvas-page) {
+        margin-left: calc(var(--dg-filetree-width) + var(--dg-filetree-gap)) !important;
+        margin-right: calc(var(--dg-sidebar-max-width) + var(--dg-sidebar-gap)) !important;
+        max-width: none !important;
+        width: auto;
+        transition: margin-left 0.2s ease, margin-right 0.2s ease;
+    }
+
+    // Note/page title: large and centered in the content area.
+    .content > header {
+        text-align: center;
+        margin-top: 0;
+        padding-top: 0;
+    }
+
+    .content > header > h1 {
+        text-align: center;
+        font-size: clamp(1.85rem, 3.2vw, 2.55rem);
+        font-weight: 700;
+        line-height: 1.15;
+        margin: 0 auto 0.45em;
+        max-width: 100%;
+    }
+
+    .content > header .header-meta {
+        justify-content: center;
+    }
+
+    // Hide Ctrl+K (and similar) shortcut labels in the search bar (desktop).
+    .search-button .search-keys {
+        display: none !important;
+    }
+
+    // No "Digital Garden" / site-name heading in the desktop filetree.
+    .filetree-sidebar > a.site-name-link,
+    .filetree-sidebar > a:not(:has(img)) {
+        display: none !important;
+    }
+
+    // Hide local graph on desktop (mobile keeps stock graph when enabled).
+    #graph-component,
+    .graph {
+        display: none !important;
+    }
+
+    // Desktop-only badge guards (do not affect mobile Netlify chrome).
+    .forestry-fixed-ui,
+    [class*="forestry-fixed"],
+    [data-fixed-position="bottom-right"],
+    [data-fixed-position="bottom-left"],
+    [data-fixed-position="bottom"],
+    #netlify-identity-widget,
+    .netlify-modal,
+    [class*="netlify-badge"],
+    [id*="netlify-badge"],
+    [class*="netlify-notice"],
+    [id*="netlify-notice"],
+    a[href*="netlify.com"][class*="badge"],
+    a[href*="netlify.com"][target="_blank"]:has(img),
+    iframe[src*="netlify"],
+    img[alt*="Netlify" i],
+    img[alt*="netlify" i],
+    img[src*="netlify"] {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        max-height: 0 !important;
+        overflow: hidden !important;
+    }
+
+    // --- Desktop panel collapse / expand -----------------------------------
     .panel-collapse-row {
         display: flex;
+        flex-shrink: 0;
+        margin-bottom: 8px;
+    }
+
+    .panel-collapse-row-left {
+        justify-content: flex-end;
+    }
+
+    .panel-collapse-row-right {
+        justify-content: flex-start;
+    }
+
+    .panel-collapse-btn,
+    .panel-edge-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid var(--background-modifier-border, var(--background-secondary-alt, #333));
+        background: var(--background-secondary, #1e1e1e);
+        color: var(--text-muted);
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        line-height: 1;
+    }
+
+    .panel-collapse-btn:hover,
+    .panel-edge-toggle:hover {
+        color: var(--text-normal);
+        border-color: var(--text-faint);
+    }
+
+    .panel-collapse-btn i,
+    .panel-collapse-btn svg,
+    .panel-edge-toggle i,
+    .panel-edge-toggle svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .panel-edge-toggle {
+        position: fixed;
+        top: 16px;
+        z-index: 40;
+        padding: 8px 10px;
+    }
+
+    .panel-edge-toggle-left {
+        left: 10px;
+    }
+
+    .panel-edge-toggle-right {
+        right: 10px;
+    }
+
+    .panel-edge-toggle[hidden],
+    .panel-collapse-btn[hidden] {
+        display: none !important;
     }
 
     .filetree-wrapper,
@@ -211,7 +257,6 @@ body {
         overflow: hidden;
     }
 
-    // Keep the mobile sheet chrome from flashing while desktop-collapsed.
     body.right-panel-collapsed .sidebar#page-panel .page-panel-header {
         display: none;
     }
@@ -221,85 +266,18 @@ body {
     }
 }
 
+@media (min-width: 1001px) and (max-width: 1400px) {
+    .content:not(.canvas-page) {
+        margin-left: calc(var(--dg-filetree-width) + 16px) !important;
+        margin-right: 20px !important;
+        max-width: none !important;
+    }
+}
+
+// Mobile: hide desktop-only collapse chrome; leave stock DG mobile layout alone.
 @media (max-width: 1000px) {
     .panel-collapse-row,
     .panel-edge-toggle {
         display: none !important;
-    }
-}
-
-// Note/page title: large and centered in the content area.
-.content > header {
-    text-align: center;
-    margin-top: 0;
-    padding-top: 0;
-}
-
-.content > header > h1 {
-    text-align: center;
-    // Slightly smaller than before, still large and centered.
-    font-size: clamp(1.85rem, 3.2vw, 2.55rem);
-    font-weight: 700;
-    line-height: 1.15;
-    margin: 0 auto 0.45em;
-    max-width: 100%;
-}
-
-.content > header .header-meta {
-    justify-content: center;
-}
-
-// Hide Ctrl+K (and similar) shortcut labels in the search bar.
-.search-button .search-keys {
-    display: none !important;
-}
-
-// Hide local graph if still present from cached HTML.
-#graph-component,
-.graph {
-    display: none !important;
-}
-
-// Hide Netlify / Forestry "Powered by" badges (desktop + mobile bottom bars).
-.forestry-fixed-ui,
-[class*="forestry-fixed"],
-[data-fixed-position="bottom-right"],
-[data-fixed-position="bottom-left"],
-[data-fixed-position="bottom"],
-#netlify-identity-widget,
-.netlify-modal,
-[class*="netlify-badge"],
-[id*="netlify-badge"],
-[class*="netlify-notice"],
-[id*="netlify-notice"],
-a[href*="netlify.com"][class*="badge"],
-a[href*="netlify.com"][target="_blank"]:has(img),
-iframe[src*="netlify"],
-img[alt*="Netlify" i],
-img[alt*="netlify" i],
-img[src*="netlify"] {
-    display: none !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-    opacity: 0 !important;
-    height: 0 !important;
-    max-height: 0 !important;
-    overflow: hidden !important;
-}
-
-// Extra mobile guard: any fixed bottom branding strip.
-@media (max-width: 1000px) {
-    body > a[href*="netlify"],
-    body > div[class*="netlify"],
-    body > div[id*="netlify"],
-    body > div[class*="forestry"],
-    body > div[id*="forestry"],
-    .nf-toast,
-    #nf-notification,
-    [class*="powered-by"],
-    [id*="powered-by"] {
-        display: none !important;
-        visibility: hidden !important;
-        pointer-events: none !important;
     }
 }
