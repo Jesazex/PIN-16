@@ -51,8 +51,14 @@
       }
 
       function applyState() {
-            const leftCollapsed = readCollapsed(LEFT_KEY);
-            const rightCollapsed = readCollapsed(RIGHT_KEY);
+            let leftCollapsed = readCollapsed(LEFT_KEY);
+            let rightCollapsed = readCollapsed(RIGHT_KEY);
+
+            // Mobile: only one panel open at a time.
+            if (isCompact() && !leftCollapsed && !rightCollapsed) {
+                  rightCollapsed = true;
+                  writeCollapsed(RIGHT_KEY, true);
+            }
 
             document.body.classList.toggle('left-panel-collapsed', leftCollapsed);
             document.body.classList.toggle('right-panel-collapsed', rightCollapsed);
@@ -77,7 +83,13 @@
       }
 
       function setCollapsed(side, collapsed) {
-            writeCollapsed(side === 'left' ? LEFT_KEY : RIGHT_KEY, collapsed);
+            if (isCompact() && !collapsed) {
+                  // Opening one panel closes the other on phone.
+                  writeCollapsed(LEFT_KEY, side !== 'left');
+                  writeCollapsed(RIGHT_KEY, side !== 'right');
+            } else {
+                  writeCollapsed(side === 'left' ? LEFT_KEY : RIGHT_KEY, collapsed);
+            }
             applyState();
       }
 

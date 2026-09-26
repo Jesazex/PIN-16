@@ -397,18 +397,33 @@ body.right-panel-collapsed .content:not(.canvas-page) {
         visibility: hidden !important;
     }
 
-    // Edge Show buttons stay inside the phone viewport.
-    .panel-edge-toggle {
+    // Show + Hide share the same fixed corner slots so Hide never jumps
+    // downward when a panel opens (not pushed into the panel body).
+    .panel-edge-toggle,
+    .panel-collapse-row {
+        position: fixed;
         top: 12px;
+        z-index: 45;
+        margin: 0;
+        padding: 0;
+    }
+
+    .panel-edge-toggle {
         padding: 8px;
     }
 
-    .panel-edge-toggle-left {
+    .panel-edge-toggle-left,
+    .panel-collapse-row-left {
         left: 8px;
+        right: auto;
+        justify-content: flex-start;
     }
 
-    .panel-edge-toggle-right {
+    .panel-edge-toggle-right,
+    .panel-collapse-row-right {
         right: 8px;
+        left: auto;
+        justify-content: flex-end;
     }
 
     // Icon-only Hide on phone to keep controls compact.
@@ -418,6 +433,24 @@ body.right-panel-collapsed .content:not(.canvas-page) {
 
     .panel-collapse-btn {
         padding: 8px;
+    }
+
+    // Collapse buttons are fixed outside the drawer; keep them visible when
+    // the open panel would otherwise clip/hide descendants.
+    body:not(.right-panel-collapsed) .panel-collapse-row-right,
+    body:not(.right-panel-collapsed) .panel-collapse-row-right .panel-collapse-btn,
+    body:not(.right-panel-collapsed) .panel-collapse-row-right .panel-collapse-btn * {
+        visibility: visible !important;
+        pointer-events: auto !important;
+        opacity: 1 !important;
+    }
+
+    body:not(.left-panel-collapsed) .panel-collapse-row-left,
+    body:not(.left-panel-collapsed) .panel-collapse-row-left .panel-collapse-btn,
+    body:not(.left-panel-collapsed) .panel-collapse-row-left .panel-collapse-btn * {
+        visibility: visible !important;
+        pointer-events: auto !important;
+        opacity: 1 !important;
     }
 
     .content > header > h1 {
