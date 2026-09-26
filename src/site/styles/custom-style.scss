@@ -25,6 +25,20 @@ body {
 .filetree-sidebar {
     padding-left: 8px;
     margin-left: 0;
+
+    // Invert file-list colors: only the open note is accent-colored.
+    .notelink .filename {
+        color: var(--text-muted) !important;
+    }
+
+    .notelink.active-note {
+        border-left-color: var(--text-accent);
+    }
+
+    .notelink.active-note .filename {
+        color: var(--text-accent) !important;
+        font-weight: 600;
+    }
 }
 
 // Right headings list flush to the right edge of the viewport.
