@@ -9,6 +9,9 @@ body {
     --dg-sidebar-container-padding: 0;
     --dg-filetree-padding: 10px 12px 10px 8px;
     --dg-content-max-width: 100%;
+    // Pull title + body higher (less empty space above the note).
+    --dg-content-padding-top: 36px;
+    --dg-content-padding-top-mobile: 28px;
 }
 
 // Left filetree flush to the left edge of the viewport.
@@ -100,14 +103,17 @@ body {
 // Note/page title: large and centered in the content area.
 .content > header {
     text-align: center;
+    margin-top: 0;
+    padding-top: 0;
 }
 
 .content > header > h1 {
     text-align: center;
-    font-size: clamp(2.25rem, 4.5vw, 3.25rem);
+    // Slightly smaller than before, still large and centered.
+    font-size: clamp(1.85rem, 3.2vw, 2.55rem);
     font-weight: 700;
     line-height: 1.15;
-    margin: 0.4em auto 0.6em;
+    margin: 0 auto 0.45em;
     max-width: 100%;
 }
 
