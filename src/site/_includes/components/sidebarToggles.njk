@@ -1,4 +1,4 @@
-{#- Desktop collapse/expand controls for left filetree and right headings outline. -#}
+{#- Collapse/expand controls for left filetree and right headings outline. -#}
 <button type="button"
         class="panel-edge-toggle panel-edge-toggle-left"
         data-panel-toggle="left"
@@ -22,17 +22,23 @@
 (function () {
       const LEFT_KEY = 'dg-left-panel-collapsed';
       const RIGHT_KEY = 'dg-right-panel-collapsed';
-      const DESKTOP_MQ = window.matchMedia('(min-width: 1001px)');
+      const COMPACT_MQ = window.matchMedia('(max-width: 1000px)');
 
-      function isDesktop() {
-            return DESKTOP_MQ.matches;
+      function isCompact() {
+            return COMPACT_MQ.matches;
       }
 
       function readCollapsed(key) {
             try {
-                  return sessionStorage.getItem(key) === '1';
+                  const value = sessionStorage.getItem(key);
+                  if (value === null) {
+                        // Phones default to both panels collapsed so the page
+                        // fits the device width without horizontal scrolling.
+                        return isCompact();
+                  }
+                  return value === '1';
             } catch {
-                  return false;
+                  return isCompact();
             }
       }
 
@@ -45,23 +51,24 @@
       }
 
       function applyState() {
-            const leftCollapsed = isDesktop() && readCollapsed(LEFT_KEY);
-            const rightCollapsed = isDesktop() && readCollapsed(RIGHT_KEY);
+            const leftCollapsed = readCollapsed(LEFT_KEY);
+            const rightCollapsed = readCollapsed(RIGHT_KEY);
 
             document.body.classList.toggle('left-panel-collapsed', leftCollapsed);
             document.body.classList.toggle('right-panel-collapsed', rightCollapsed);
+            document.body.classList.toggle('compact-panels', isCompact());
 
             document.querySelectorAll('[data-panel-toggle="left"][data-panel-action="collapse"]').forEach((btn) => {
-                  btn.hidden = !isDesktop() || leftCollapsed;
+                  btn.hidden = leftCollapsed;
             });
             document.querySelectorAll('[data-panel-toggle="left"][data-panel-action="expand"]').forEach((btn) => {
-                  btn.hidden = !isDesktop() || !leftCollapsed;
+                  btn.hidden = !leftCollapsed;
             });
             document.querySelectorAll('[data-panel-toggle="right"][data-panel-action="collapse"]').forEach((btn) => {
-                  btn.hidden = !isDesktop() || rightCollapsed;
+                  btn.hidden = rightCollapsed;
             });
             document.querySelectorAll('[data-panel-toggle="right"][data-panel-action="expand"]').forEach((btn) => {
-                  btn.hidden = !isDesktop() || !rightCollapsed;
+                  btn.hidden = !rightCollapsed;
             });
 
             if (window.lucide && typeof window.lucide.createIcons === 'function') {
@@ -76,7 +83,7 @@
 
       document.addEventListener('click', (evt) => {
             const btn = evt.target.closest('[data-panel-toggle][data-panel-action]');
-            if (!btn || !isDesktop()) return;
+            if (!btn) return;
             const side = btn.getAttribute('data-panel-toggle');
             const action = btn.getAttribute('data-panel-action');
             if ((side !== 'left' && side !== 'right') || (action !== 'collapse' && action !== 'expand')) return;
@@ -84,7 +91,7 @@
             setCollapsed(side, action === 'collapse');
       });
 
-      DESKTOP_MQ.addEventListener('change', applyState);
+      COMPACT_MQ.addEventListener('change', applyState);
       if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', applyState);
       } else {
