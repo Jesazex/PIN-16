@@ -82,6 +82,7 @@ body {
     margin-right: calc(var(--dg-sidebar-max-width) + var(--dg-sidebar-gap)) !important;
     max-width: none !important;
     width: auto;
+    transition: margin-left 0.2s ease, margin-right 0.2s ease;
 }
 
 @media (max-width: 1400px) {
@@ -97,6 +98,119 @@ body {
         margin-left: auto !important;
         margin-right: auto !important;
         max-width: var(--dg-content-max-width) !important;
+    }
+}
+
+// --- Desktop panel collapse / expand ---------------------------------------
+.panel-collapse-row {
+    display: none;
+    flex-shrink: 0;
+    margin-bottom: 8px;
+}
+
+.panel-collapse-row-left {
+    justify-content: flex-end;
+}
+
+.panel-collapse-row-right {
+    justify-content: flex-start;
+}
+
+.panel-collapse-btn,
+.panel-edge-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--background-modifier-border, var(--background-secondary-alt, #333));
+    background: var(--background-secondary, #1e1e1e);
+    color: var(--text-muted);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.panel-collapse-btn:hover,
+.panel-edge-toggle:hover {
+    color: var(--text-normal);
+    border-color: var(--text-faint);
+}
+
+.panel-collapse-btn i,
+.panel-collapse-btn svg,
+.panel-edge-toggle i,
+.panel-edge-toggle svg {
+    width: 16px;
+    height: 16px;
+}
+
+.panel-edge-toggle {
+    position: fixed;
+    top: 16px;
+    z-index: 40;
+    padding: 8px 10px;
+}
+
+.panel-edge-toggle-left {
+    left: 10px;
+}
+
+.panel-edge-toggle-right {
+    right: 10px;
+}
+
+.panel-edge-toggle[hidden],
+.panel-collapse-btn[hidden] {
+    display: none !important;
+}
+
+@media (min-width: 1001px) {
+    .panel-collapse-row {
+        display: flex;
+    }
+
+    .filetree-wrapper,
+    .sidebar#page-panel {
+        transition: width 0.2s ease, min-width 0.2s ease, max-width 0.2s ease, opacity 0.15s ease, padding 0.2s ease;
+    }
+
+    body.left-panel-collapsed .filetree-wrapper {
+        width: 0 !important;
+        min-width: 0 !important;
+        opacity: 0;
+        pointer-events: none;
+        overflow: hidden;
+    }
+
+    body.left-panel-collapsed .content:not(.canvas-page) {
+        margin-left: 16px !important;
+    }
+
+    body.right-panel-collapsed .sidebar#page-panel {
+        width: 0 !important;
+        min-width: 0 !important;
+        max-width: 0 !important;
+        padding: 0 !important;
+        opacity: 0;
+        pointer-events: none;
+        overflow: hidden;
+    }
+
+    // Keep the mobile sheet chrome from flashing while desktop-collapsed.
+    body.right-panel-collapsed .sidebar#page-panel .page-panel-header {
+        display: none;
+    }
+
+    body.right-panel-collapsed .content:not(.canvas-page) {
+        margin-right: 16px !important;
+    }
+}
+
+@media (max-width: 1000px) {
+    .panel-collapse-row,
+    .panel-edge-toggle {
+        display: none !important;
     }
 }
 

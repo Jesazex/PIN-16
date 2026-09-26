@@ -1,0 +1,94 @@
+{#- Desktop collapse/expand controls for left filetree and right headings outline. -#}
+<button type="button"
+        class="panel-edge-toggle panel-edge-toggle-left"
+        data-panel-toggle="left"
+        data-panel-action="expand"
+        aria-label="Show file list"
+        title="Show file list"
+        hidden>
+      <i data-lucide="panel-left-open" aria-hidden="true"></i>
+</button>
+<button type="button"
+        class="panel-edge-toggle panel-edge-toggle-right"
+        data-panel-toggle="right"
+        data-panel-action="expand"
+        aria-label="Show outline"
+        title="Show outline"
+        hidden>
+      <i data-lucide="panel-right-open" aria-hidden="true"></i>
+</button>
+
+<script>
+(function () {
+      const LEFT_KEY = 'dg-left-panel-collapsed';
+      const RIGHT_KEY = 'dg-right-panel-collapsed';
+      const DESKTOP_MQ = window.matchMedia('(min-width: 1001px)');
+
+      function isDesktop() {
+            return DESKTOP_MQ.matches;
+      }
+
+      function readCollapsed(key) {
+            try {
+                  return sessionStorage.getItem(key) === '1';
+            } catch {
+                  return false;
+            }
+      }
+
+      function writeCollapsed(key, value) {
+            try {
+                  sessionStorage.setItem(key, value ? '1' : '0');
+            } catch {
+                  // session-only preference; ignore storage failures
+            }
+      }
+
+      function applyState() {
+            const leftCollapsed = isDesktop() && readCollapsed(LEFT_KEY);
+            const rightCollapsed = isDesktop() && readCollapsed(RIGHT_KEY);
+
+            document.body.classList.toggle('left-panel-collapsed', leftCollapsed);
+            document.body.classList.toggle('right-panel-collapsed', rightCollapsed);
+
+            document.querySelectorAll('[data-panel-toggle="left"][data-panel-action="collapse"]').forEach((btn) => {
+                  btn.hidden = !isDesktop() || leftCollapsed;
+            });
+            document.querySelectorAll('[data-panel-toggle="left"][data-panel-action="expand"]').forEach((btn) => {
+                  btn.hidden = !isDesktop() || !leftCollapsed;
+            });
+            document.querySelectorAll('[data-panel-toggle="right"][data-panel-action="collapse"]').forEach((btn) => {
+                  btn.hidden = !isDesktop() || rightCollapsed;
+            });
+            document.querySelectorAll('[data-panel-toggle="right"][data-panel-action="expand"]').forEach((btn) => {
+                  btn.hidden = !isDesktop() || !rightCollapsed;
+            });
+
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                  window.lucide.createIcons({ attrs: { class: ['svg-icon'] } });
+            }
+      }
+
+      function setCollapsed(side, collapsed) {
+            writeCollapsed(side === 'left' ? LEFT_KEY : RIGHT_KEY, collapsed);
+            applyState();
+      }
+
+      document.addEventListener('click', (evt) => {
+            const btn = evt.target.closest('[data-panel-toggle][data-panel-action]');
+            if (!btn || !isDesktop()) return;
+            const side = btn.getAttribute('data-panel-toggle');
+            const action = btn.getAttribute('data-panel-action');
+            if ((side !== 'left' && side !== 'right') || (action !== 'collapse' && action !== 'expand')) return;
+            evt.preventDefault();
+            setCollapsed(side, action === 'collapse');
+      });
+
+      DESKTOP_MQ.addEventListener('change', applyState);
+      if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', applyState);
+      } else {
+            applyState();
+      }
+})();
+</script>

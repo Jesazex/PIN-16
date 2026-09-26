@@ -8,6 +8,17 @@
                   </button>
             </div>
             <div class="sidebar-container">
+                  <div class="panel-collapse-row panel-collapse-row-right">
+                        <button type="button"
+                                class="panel-collapse-btn"
+                                data-panel-toggle="right"
+                                data-panel-action="collapse"
+                                aria-label="Hide outline"
+                                title="Hide outline">
+                              <i data-lucide="panel-right-close" aria-hidden="true"></i>
+                              <span>Hide</span>
+                        </button>
+                  </div>
                   {% set slotName = "sidebar.top" %}{% include "components/pluginSlot.njk" %}
                   {% for imp in dynamics.sidebar.top %}
                         {% include imp %}

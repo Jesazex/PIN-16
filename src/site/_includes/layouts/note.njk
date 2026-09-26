@@ -73,6 +73,7 @@ permalink: "notes/{{ page.fileSlug | slugify }}/"
       {%include "components/sidebar.njk"%}
     {% endif %}
     {% include "components/floatingActions.njk" %}
+    {% include "components/sidebarToggles.njk" %}
 
     {% include "components/references.njk" %}
     {% set slotName = "common.footer" %}{% include "components/pluginSlot.njk" %}
