@@ -12,8 +12,6 @@
                   {% for imp in dynamics.sidebar.top %}
                         {% include imp %}
                   {% endfor %}
-                  {% include "components/topics.njk" %}
-
                   {%if settings.dgShowToc === true%}
                         {%set tocHtml= (content and (content | hideDataview | link | toc)) %}
                         {%if tocHtml %}

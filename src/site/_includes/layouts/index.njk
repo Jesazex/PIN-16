@@ -64,8 +64,10 @@
       {% endfor %}
     </main>
 
-    {# Topics list is always shown in the right sidebar. #}
-    {%include "components/sidebar.njk" %}
+    {# In-page headings outline (TOC) is shown in the right sidebar. #}
+    {% if settings.dgShowToc === true or settings.dgShowBacklinks === true or settings.dgShowLocalGraph === true or dynamics.sidebar.top.length > 0 or dynamics.sidebar.bottom.length > 0 or plugins.slots["sidebar.top"] or plugins.slots["sidebar.bottom"] %}
+      {%include "components/sidebar.njk" %}
+    {% endif %}
     {% include "components/floatingActions.njk" %}
 
     {% set slotName = "common.footer" %}{% include "components/pluginSlot.njk" %}
