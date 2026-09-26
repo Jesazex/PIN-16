@@ -3,13 +3,37 @@ body {
     --dg-sidebar-top: 0;
     --dg-sidebar-container-height: 100%;
     --dg-toc-max-height: none;
+    // Hug the viewport edges; give freed space to the center content.
+    --dg-filetree-gap: 24px;
+    --dg-sidebar-gap: 24px;
+    --dg-sidebar-container-padding: 0;
+    --dg-filetree-padding: 10px 12px 10px 8px;
+    --dg-content-max-width: 100%;
 }
 
+// Left filetree flush to the left edge of the viewport.
+.filetree-wrapper {
+    left: 0 !important;
+    width: var(--dg-filetree-width) !important;
+    min-width: var(--dg-filetree-width) !important;
+    justify-content: flex-start !important;
+}
+
+.filetree-sidebar {
+    padding-left: 8px;
+    margin-left: 0;
+}
+
+// Right headings list flush to the right edge of the viewport.
 .sidebar {
     top: 0 !important;
     height: 100% !important;
-    // Match left filetree padding so the outline starts in the same band.
-    padding: 10px 0 10px 0;
+    left: auto !important;
+    right: 0 !important;
+    width: var(--dg-sidebar-max-width);
+    max-width: var(--dg-sidebar-max-width);
+    padding: 10px 0 !important;
+    box-sizing: border-box;
 }
 
 .sidebar-container {
@@ -17,7 +41,9 @@ body {
     min-height: 0;
     box-sizing: border-box;
     padding-top: 0;
+    padding-right: 0 !important;
     padding-bottom: 20px;
+    padding-left: 12px;
 
     // In-page headings outline: fill the full right column height.
     .toc {
@@ -26,7 +52,7 @@ body {
         height: 100%;
         display: flex;
         flex-direction: column;
-        padding: 5px;
+        padding: 5px 0 5px 5px;
         margin: 0;
     }
 
@@ -45,6 +71,35 @@ body {
     .backlinks {
         display: none;
     }
+}
+
+// Central content grows into the space between the edge-hugging sidebars.
+.content:not(.canvas-page) {
+    margin-left: calc(var(--dg-filetree-width) + var(--dg-filetree-gap)) !important;
+    margin-right: calc(var(--dg-sidebar-max-width) + var(--dg-sidebar-gap)) !important;
+    max-width: none !important;
+    width: auto;
+}
+
+@media (max-width: 1400px) {
+    .content:not(.canvas-page) {
+        margin-left: calc(var(--dg-filetree-width) + 16px) !important;
+        margin-right: 20px !important;
+        max-width: none !important;
+    }
+}
+
+@media (max-width: 1000px) {
+    .content:not(.canvas-page) {
+        margin-left: auto !important;
+        margin-right: auto !important;
+        max-width: var(--dg-content-max-width) !important;
+    }
+}
+
+// Hide Ctrl+K (and similar) shortcut labels in the search bar.
+.search-button .search-keys {
+    display: none !important;
 }
 
 // Hide local graph if still present from cached HTML.
