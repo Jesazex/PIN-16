@@ -97,6 +97,24 @@ body {
     }
 }
 
+// Note/page title: large and centered in the content area.
+.content > header {
+    text-align: center;
+}
+
+.content > header > h1 {
+    text-align: center;
+    font-size: clamp(2.25rem, 4.5vw, 3.25rem);
+    font-weight: 700;
+    line-height: 1.15;
+    margin: 0.4em auto 0.6em;
+    max-width: 100%;
+}
+
+.content > header .header-meta {
+    justify-content: center;
+}
+
 // Hide Ctrl+K (and similar) shortcut labels in the search bar.
 .search-button .search-keys {
     display: none !important;
@@ -108,16 +126,46 @@ body {
     display: none !important;
 }
 
-// Hide Netlify / Forestry bottom-right badges and deploy toasts.
+// Hide Netlify / Forestry "Powered by" badges (desktop + mobile bottom bars).
 .forestry-fixed-ui,
 [class*="forestry-fixed"],
+[data-fixed-position="bottom-right"],
+[data-fixed-position="bottom-left"],
+[data-fixed-position="bottom"],
 #netlify-identity-widget,
 .netlify-modal,
 [class*="netlify-badge"],
 [id*="netlify-badge"],
+[class*="netlify-notice"],
+[id*="netlify-notice"],
 a[href*="netlify.com"][class*="badge"],
-iframe[src*="netlify"] {
+a[href*="netlify.com"][target="_blank"]:has(img),
+iframe[src*="netlify"],
+img[alt*="Netlify" i],
+img[alt*="netlify" i],
+img[src*="netlify"] {
     display: none !important;
     visibility: hidden !important;
     pointer-events: none !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+}
+
+// Extra mobile guard: any fixed bottom branding strip.
+@media (max-width: 1000px) {
+    body > a[href*="netlify"],
+    body > div[class*="netlify"],
+    body > div[id*="netlify"],
+    body > div[class*="forestry"],
+    body > div[id*="forestry"],
+    .nf-toast,
+    #nf-notification,
+    [class*="powered-by"],
+    [id*="powered-by"] {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
 }
