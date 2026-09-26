@@ -12,9 +12,7 @@
                   {% for imp in dynamics.sidebar.top %}
                         {% include imp %}
                   {% endfor %}
-                  {%if settings.dgShowLocalGraph === true%}
-                        {%include "components/graphScript.njk"%}
-                  {%endif%}
+                  {% include "components/topics.njk" %}
 
                   {%if settings.dgShowToc === true%}
                         {%set tocHtml= (content and (content | hideDataview | link | toc)) %}

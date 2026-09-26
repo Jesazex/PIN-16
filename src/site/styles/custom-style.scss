@@ -1,13 +1,79 @@
 body {
-    /***
-      ADD YOUR CUSTOM STYLING HERE. (INSIDE THE body {...} section.)
-      IT WILL TAKE PRECEDENCE OVER THE STYLING IN THE STYLE.CSS FILE.
-   ***/
-    //  background-color: white;
-    //  .content {
-    //   font-size: 14px;
-    //  }
-    //  h1 {
-    //   color: black;
-    //  }
+    --dg-sidebar-container-height: calc(100vh - var(--dg-sidebar-top));
+    --dg-toc-max-height: none;
+}
+
+// Full-height topics list in the right sidebar (replaces the local graph).
+.sidebar-container {
+    .topics {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 5px;
+        margin-bottom: 12px;
+    }
+
+    .topics-title {
+        font-size: var(--dg-toc-title-size);
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 400;
+        margin-bottom: 8px;
+        flex-shrink: 0;
+    }
+
+    .topics-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        overflow-y: auto;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .topics-item {
+        padding: 4px 0;
+
+        a {
+            text-decoration: none;
+            color: var(--text-normal);
+
+            &:hover {
+                text-decoration: underline;
+                color: var(--text-accent);
+            }
+        }
+
+        &.is-active a {
+            color: var(--text-accent);
+            font-weight: 600;
+        }
+    }
+
+    .toc,
+    .backlinks {
+        flex: 0 0 auto;
+    }
+}
+
+// Hide local graph if still present from cached HTML.
+#graph-component,
+.graph {
+    display: none !important;
+}
+
+// Hide Netlify / Forestry bottom-right badges and deploy toasts.
+.forestry-fixed-ui,
+[class*="forestry-fixed"],
+#netlify-identity-widget,
+.netlify-modal,
+[class*="netlify-badge"],
+[id*="netlify-badge"],
+a[href*="netlify.com"][class*="badge"],
+iframe[src*="netlify"] {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
 }
