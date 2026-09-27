@@ -37,6 +37,15 @@ body {
     max-width: 100%;
     box-sizing: border-box;
 
+    // Match left file-list / folder text to right headings list size.
+    .filename,
+    .foldername,
+    .notelink,
+    .foldername-wrapper {
+        font-size: var(--dg-toc-font-size, 1rem) !important;
+        line-height: 1.5;
+    }
+
     // Invert file-list colors: only the open note is accent-colored.
     .notelink .filename {
         color: var(--text-muted) !important;
@@ -107,14 +116,15 @@ body {
     }
 }
 
-// Article keeps a stable full-viewport column. Side lists overlay on top
-// of this text — they must never push or narrow it.
+// Default article gutters (room for corner Show buttons). Pinned-open
+// panels on desktop widen these margins; hover-peek does not.
 .content:not(.canvas-page) {
     margin-left: 48px !important;
     margin-right: 48px !important;
     max-width: none !important;
     width: auto;
     box-sizing: border-box;
+    transition: margin-left 0.2s ease, margin-right 0.2s ease;
 }
 
 // Note/page title: large and centered in the content area.
@@ -213,17 +223,13 @@ body {
     display: none !important;
 }
 
-// Desktop: lists drop over the article (overlay). No width-slide that
-// reflows the text column — appear/disappear with a short fade+drop.
+// Desktop: hover = overlay drop over text; click-pin = in-flow (text narrows).
 @media (min-width: 1001px) {
     .filetree-wrapper,
     .sidebar#page-panel {
         position: fixed !important;
-        z-index: 50;
         background-color: var(--background-secondary, #1e1e1e);
-        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-        transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
-        // Keep full panel size even while hidden so show is a drop, not a slide.
+        transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease, box-shadow 0.15s ease;
         width: var(--dg-filetree-width) !important;
         min-width: var(--dg-filetree-width) !important;
         max-width: var(--dg-filetree-width) !important;
@@ -235,21 +241,34 @@ body {
         max-width: var(--dg-sidebar-max-width) !important;
     }
 
-    .filetree-wrapper {
-        transform-origin: top left;
+    // Keep search fully below the fixed Show button (and Hide control).
+    .filetree-sidebar {
+        padding-top: 52px;
+        position: relative;
     }
 
-    .sidebar#page-panel {
-        transform-origin: top right;
+    .filetree-sidebar .panel-collapse-row-left {
+        position: absolute;
+        top: 12px;
+        right: 8px;
+        left: auto;
+        margin: 0;
+        z-index: 2;
     }
 
-    // Pinned-closed and not hovering: hide in place (no layout effect).
+    .filetree-sidebar .search-button {
+        margin-top: 0;
+    }
+
+    // --- Pinned-closed, not hovering: hidden --------------------------------
     body.left-panel-collapsed:not(.left-panel-peek) .filetree-wrapper {
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
         transform: translateY(-8px);
         overflow: hidden !important;
+        z-index: 50;
+        box-shadow: none;
     }
 
     body.right-panel-collapsed:not(.right-panel-peek) .sidebar#page-panel {
@@ -258,35 +277,34 @@ body {
         pointer-events: none;
         transform: translateY(-8px);
         overflow: hidden !important;
-        padding: 10px 0 !important; // keep size; do not collapse width
+        padding: 10px 0 !important;
+        z-index: 50;
+        box-shadow: none;
     }
 
     body.right-panel-collapsed:not(.right-panel-peek) .sidebar#page-panel .page-panel-header {
         display: none;
     }
 
-    // Open (pinned) or hover-peek: drop over the text.
-    body:not(.left-panel-collapsed) .filetree-wrapper,
+    // --- Hover peek (pinned closed): overlay over text, no layout shift -----
     body.left-panel-collapsed.left-panel-peek .filetree-wrapper,
-    body:not(.right-panel-collapsed) .sidebar#page-panel,
     body.right-panel-collapsed.right-panel-peek .sidebar#page-panel {
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
         transform: translateY(0);
         overflow: auto !important;
+        z-index: 50;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
     }
 
-    // Content width never depends on panel open/closed/peek.
-    body.left-panel-collapsed .content:not(.canvas-page),
-    body.right-panel-collapsed .content:not(.canvas-page),
-    body.left-panel-peek .content:not(.canvas-page),
-    body.right-panel-peek .content:not(.canvas-page),
-    body:not(.left-panel-collapsed) .content:not(.canvas-page),
-    body:not(.right-panel-collapsed) .content:not(.canvas-page) {
+    // Peek must not narrow the article.
+    body.left-panel-collapsed .content:not(.canvas-page) {
         margin-left: 48px !important;
+    }
+
+    body.right-panel-collapsed .content:not(.canvas-page) {
         margin-right: 48px !important;
-        max-width: none !important;
     }
 
     body.left-panel-peek .panel-edge-toggle-left,
@@ -294,9 +312,49 @@ body {
         z-index: 51;
     }
 
+    // --- Click-pinned open: in-flow — article narrows, no overlay on text ---
+    body:not(.left-panel-collapsed) .filetree-wrapper {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: none;
+        overflow: auto !important;
+        z-index: 30;
+        box-shadow: none;
+    }
+
+    body:not(.right-panel-collapsed) .sidebar#page-panel {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: none;
+        overflow: auto !important;
+        z-index: 30;
+        box-shadow: none;
+        padding: 10px 0 !important;
+    }
+
+    body:not(.left-panel-collapsed) .content:not(.canvas-page) {
+        margin-left: calc(var(--dg-filetree-width) + var(--dg-filetree-gap)) !important;
+    }
+
+    body:not(.right-panel-collapsed) .content:not(.canvas-page) {
+        margin-right: calc(var(--dg-sidebar-max-width) + var(--dg-sidebar-gap)) !important;
+    }
+
+    @media (max-width: 1400px) {
+        body:not(.left-panel-collapsed) .content:not(.canvas-page) {
+            margin-left: calc(var(--dg-filetree-width) + 16px) !important;
+        }
+
+        body:not(.right-panel-collapsed) .content:not(.canvas-page) {
+            margin-right: 20px !important;
+        }
+    }
+
     body:not(.left-panel-collapsed) .panel-collapse-row-left,
     body:not(.right-panel-collapsed) .panel-collapse-row-right {
-        z-index: 51;
+        z-index: 31;
     }
 }
 
@@ -416,7 +474,9 @@ body {
     .filetree-sidebar {
         width: 100%;
         max-width: 100%;
-        padding: 10px 10px 10px 8px;
+        // Leave room under the fixed corner Hide/Show so Search stays clear.
+        padding: 52px 10px 10px 8px;
+        box-sizing: border-box;
     }
 
     .filetree-sidebar .search-button {

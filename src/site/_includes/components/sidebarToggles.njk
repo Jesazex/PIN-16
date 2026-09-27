@@ -80,12 +80,11 @@
             const leftPeek = isDesktop() && hoverPeek.left;
             const rightPeek = isDesktop() && hoverPeek.right;
 
-            // Visual collapse: pinned closed, unless desktop hover is peeking.
-            const leftCollapsed = leftPinned && !leftPeek;
-            const rightCollapsed = rightPinned && !rightPeek;
-
-            document.body.classList.toggle('left-panel-collapsed', leftCollapsed);
-            document.body.classList.toggle('right-panel-collapsed', rightCollapsed);
+            // `*-panel-collapsed` tracks the pinned click state only.
+            // Hover peek is a separate class so CSS can overlay without
+            // switching into the in-flow (text-narrowing) pinned layout.
+            document.body.classList.toggle('left-panel-collapsed', leftPinned);
+            document.body.classList.toggle('right-panel-collapsed', rightPinned);
             document.body.classList.toggle('left-panel-peek', leftPeek && leftPinned);
             document.body.classList.toggle('right-panel-peek', rightPeek && rightPinned);
             document.body.classList.toggle('compact-panels', isCompact());
