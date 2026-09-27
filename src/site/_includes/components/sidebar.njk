@@ -8,14 +8,21 @@
                   </button>
             </div>
             <div class="sidebar-container">
+                  <div class="panel-collapse-row panel-collapse-row-right">
+                        <button type="button"
+                                class="panel-collapse-btn"
+                                data-panel-toggle="right"
+                                data-panel-action="collapse"
+                                aria-label="Hide outline"
+                                title="Hide outline">
+                              <i data-lucide="panel-right-close" aria-hidden="true"></i>
+                              <span>Hide</span>
+                        </button>
+                  </div>
                   {% set slotName = "sidebar.top" %}{% include "components/pluginSlot.njk" %}
                   {% for imp in dynamics.sidebar.top %}
                         {% include imp %}
                   {% endfor %}
-                  {%if settings.dgShowLocalGraph === true%}
-                        {%include "components/graphScript.njk"%}
-                  {%endif%}
-
                   {%if settings.dgShowToc === true%}
                         {%set tocHtml= (content and (content | hideDataview | link | toc)) %}
                         {%if tocHtml %}
@@ -40,11 +47,16 @@
                                           }).filter(h => h.target);
 
                                           function updateActive() {
-                                                let current = headings[0];
+                                                // Do not default to the first heading — at page top nothing is active.
+                                                let current = null;
                                                 for (const h of headings) {
                                                       if (h.target.getBoundingClientRect().top <= 100) {
                                                             current = h;
                                                       }
+                                                }
+                                                // Keep the first item unhighlighted until the user has scrolled.
+                                                if (current === headings[0] && window.scrollY < 80) {
+                                                      current = null;
                                                 }
                                                 tocLinks.forEach(l => l.classList.remove('toc-active'));
                                                 if (current) current.link.classList.add('toc-active');

@@ -1,0 +1,257 @@
+{#- Collapse/expand + desktop hover-peek + mobile tap-outside/item-close. -#}
+<button type="button"
+        class="panel-edge-toggle panel-edge-toggle-left"
+        data-panel-toggle="left"
+        data-panel-action="expand"
+        aria-label="Show file list"
+        title="Show file list"
+        hidden>
+      <i data-lucide="panel-left-open" aria-hidden="true"></i>
+</button>
+<button type="button"
+        class="panel-edge-toggle panel-edge-toggle-right"
+        data-panel-toggle="right"
+        data-panel-action="expand"
+        aria-label="Show outline"
+        title="Show outline"
+        hidden>
+      <i data-lucide="panel-right-open" aria-hidden="true"></i>
+</button>
+
+<script>
+(function () {
+      const LEFT_KEY = 'dg-left-panel-collapsed';
+      const RIGHT_KEY = 'dg-right-panel-collapsed';
+      const COMPACT_MQ = window.matchMedia('(max-width: 1000px)');
+      const DESKTOP_MQ = window.matchMedia('(min-width: 1001px)');
+
+      // Temporary desktop hover reveal (does not change pinned click state).
+      const hoverPeek = { left: false, right: false };
+      const leaveTimers = { left: null, right: null };
+
+      function isCompact() {
+            return COMPACT_MQ.matches;
+      }
+
+      function isDesktop() {
+            return DESKTOP_MQ.matches;
+      }
+
+      function storageKey(side) {
+            return side === 'left' ? LEFT_KEY : RIGHT_KEY;
+      }
+
+      function readCollapsed(key) {
+            try {
+                  const value = sessionStorage.getItem(key);
+                  if (value === null) {
+                        // Phones default to both panels collapsed so the page
+                        // fits the device width without horizontal scrolling.
+                        return isCompact();
+                  }
+                  return value === '1';
+            } catch {
+                  return isCompact();
+            }
+      }
+
+      function writeCollapsed(key, value) {
+            try {
+                  sessionStorage.setItem(key, value ? '1' : '0');
+            } catch {
+                  // session-only preference; ignore storage failures
+            }
+      }
+
+      function pinnedCollapsed(side) {
+            return readCollapsed(storageKey(side));
+      }
+
+      function applyState() {
+            let leftPinned = pinnedCollapsed('left');
+            let rightPinned = pinnedCollapsed('right');
+
+            // Mobile: only one panel open at a time (pinned).
+            if (isCompact() && !leftPinned && !rightPinned) {
+                  rightPinned = true;
+                  writeCollapsed(RIGHT_KEY, true);
+            }
+
+            const leftPeek = isDesktop() && hoverPeek.left;
+            const rightPeek = isDesktop() && hoverPeek.right;
+
+            // `*-panel-collapsed` tracks the pinned click state only.
+            // Hover peek is a separate class so CSS can overlay without
+            // switching into the in-flow (text-narrowing) pinned layout.
+            document.body.classList.toggle('left-panel-collapsed', leftPinned);
+            document.body.classList.toggle('right-panel-collapsed', rightPinned);
+            document.body.classList.toggle('left-panel-peek', leftPeek && leftPinned);
+            document.body.classList.toggle('right-panel-peek', rightPeek && rightPinned);
+            document.body.classList.toggle('compact-panels', isCompact());
+
+            // Button chrome follows pinned state (click pin), not hover peek.
+            document.querySelectorAll('[data-panel-toggle="left"][data-panel-action="collapse"]').forEach((btn) => {
+                  btn.hidden = leftPinned;
+            });
+            document.querySelectorAll('[data-panel-toggle="left"][data-panel-action="expand"]').forEach((btn) => {
+                  btn.hidden = !leftPinned;
+            });
+            document.querySelectorAll('[data-panel-toggle="right"][data-panel-action="collapse"]').forEach((btn) => {
+                  btn.hidden = rightPinned;
+            });
+            document.querySelectorAll('[data-panel-toggle="right"][data-panel-action="expand"]').forEach((btn) => {
+                  btn.hidden = !rightPinned;
+            });
+
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                  window.lucide.createIcons({ attrs: { class: ['svg-icon'] } });
+            }
+      }
+
+      function setCollapsed(side, collapsed) {
+            if (isCompact() && !collapsed) {
+                  // Opening one panel closes the other on phone.
+                  writeCollapsed(LEFT_KEY, side !== 'left');
+                  writeCollapsed(RIGHT_KEY, side !== 'right');
+            } else {
+                  writeCollapsed(storageKey(side), collapsed);
+            }
+            // Click pins: clear hover peek for that side so state is authoritative.
+            hoverPeek[side] = false;
+            applyState();
+      }
+
+      function setHoverPeek(side, on) {
+            if (!isDesktop()) {
+                  hoverPeek.left = false;
+                  hoverPeek.right = false;
+                  return;
+            }
+            // Only peek when the panel is pinned closed.
+            if (on && !pinnedCollapsed(side)) {
+                  hoverPeek[side] = false;
+                  applyState();
+                  return;
+            }
+            hoverPeek[side] = !!on;
+            applyState();
+      }
+
+      function panelEl(side) {
+            return side === 'left'
+                  ? document.querySelector('.filetree-wrapper')
+                  : document.querySelector('.sidebar#page-panel');
+      }
+
+      function expandBtn(side) {
+            return document.querySelector(`[data-panel-toggle="${side}"][data-panel-action="expand"]`);
+      }
+
+      function relatedStillInside(side, related) {
+            if (!related || !(related instanceof Node)) return false;
+            const panel = panelEl(side);
+            const btn = expandBtn(side);
+            return (panel && panel.contains(related)) || (btn && btn.contains(related));
+      }
+
+      function bindHover(side) {
+            const onEnter = () => {
+                  if (!isDesktop()) return;
+                  clearTimeout(leaveTimers[side]);
+                  leaveTimers[side] = null;
+                  setHoverPeek(side, true);
+            };
+            const onLeave = (evt) => {
+                  if (!isDesktop()) return;
+                  if (relatedStillInside(side, evt.relatedTarget)) return;
+                  clearTimeout(leaveTimers[side]);
+                  leaveTimers[side] = setTimeout(() => {
+                        setHoverPeek(side, false);
+                  }, 80);
+            };
+
+            const btn = expandBtn(side);
+            const panel = panelEl(side);
+            if (btn) {
+                  btn.addEventListener('pointerenter', onEnter);
+                  btn.addEventListener('pointerleave', onLeave);
+            }
+            if (panel) {
+                  panel.addEventListener('pointerenter', onEnter);
+                  panel.addEventListener('pointerleave', onLeave);
+            }
+      }
+
+      // Click toggles (pin / unpin).
+      document.addEventListener('click', (evt) => {
+            const btn = evt.target.closest('[data-panel-toggle][data-panel-action]');
+            if (btn) {
+                  const side = btn.getAttribute('data-panel-toggle');
+                  const action = btn.getAttribute('data-panel-action');
+                  if ((side !== 'left' && side !== 'right') || (action !== 'collapse' && action !== 'expand')) return;
+                  evt.preventDefault();
+                  evt.stopPropagation();
+                  setCollapsed(side, action === 'collapse');
+                  return;
+            }
+
+            if (!isCompact()) return;
+
+            const leftOpen = !pinnedCollapsed('left');
+            const rightOpen = !pinnedCollapsed('right');
+            if (!leftOpen && !rightOpen) return;
+
+            const inLeft = evt.target.closest('.filetree-wrapper');
+            const inRight = evt.target.closest('.sidebar#page-panel');
+            const onEdge = evt.target.closest('.panel-edge-toggle');
+
+            // Tap outside either open menu → close open menu(s).
+            if (!inLeft && !inRight && !onEdge) {
+                  if (leftOpen) setCollapsed('left', true);
+                  if (rightOpen) setCollapsed('right', true);
+                  return;
+            }
+
+            // Tap a menu item inside an open panel → close that panel.
+            // Ignore the Hide control itself (already handled above) and folder
+            // chevrons so users can still expand folders without dismissing.
+            if (inLeft && leftOpen) {
+                  const item = evt.target.closest('a.filename, .notelink a, .notelink');
+                  if (item) {
+                        // Allow navigation; close the drawer.
+                        setCollapsed('left', true);
+                  }
+                  return;
+            }
+            if (inRight && rightOpen) {
+                  const item = evt.target.closest('.toc-container a, .toc a, .backlink-card a, a.backlink');
+                  if (item) {
+                        setCollapsed('right', true);
+                  }
+            }
+      }, true);
+
+      function boot() {
+            bindHover('left');
+            bindHover('right');
+            applyState();
+      }
+
+      COMPACT_MQ.addEventListener('change', () => {
+            hoverPeek.left = false;
+            hoverPeek.right = false;
+            applyState();
+      });
+      DESKTOP_MQ.addEventListener('change', () => {
+            hoverPeek.left = false;
+            hoverPeek.right = false;
+            applyState();
+      });
+
+      if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', boot);
+      } else {
+            boot();
+      }
+})();
+</script>

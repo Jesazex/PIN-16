@@ -24,52 +24,29 @@
         {%endif%}
     {% endmacro %}
 
-    <div x-init="isDesktop = (window.innerWidth>=1000) ? true: false;"
-            x-on:resize.window="isDesktop = (window.innerWidth>=1000) ? true : false;"
-            x-data="{isDesktop: true, showFilesMobile: false}">
+    {# Always use the desktop filetree chrome (no stock phone navbar).
+       Compact viewports collapse panels via sidebarToggles + CSS. #}
+    <div x-data="{isDesktop: true, showFilesMobile: false}">
 
-        <div x-show.important="!isDesktop" style="display: none;">
-            <nav class="navbar">
-                <div class="navbar-inner">
-                    <span style="font-size: 1.5rem; margin-right: 10px;" @click="showFilesMobile=!showFilesMobile"><i  data-lucide="menu"></i></span>
-                    {% for imp in dynamics.filetree.beforeTitle %}
-                        {% include imp %}
-                    {% endfor %}
-                    {% if meta.siteLogoPath %}
-                    <a href="/" style="text-decoration: none; flex: 1; display: flex; justify-content: center;">
-                            <img class="site-logo" src="{{meta.siteLogoPath}}" alt="{{meta.siteName}}">
-                    </a>
-                    {% else %}
-                    <a href="/" style="text-decoration: none; text-align: center;">
-                            <h1 style="margin: 15px !important;">{{meta.siteName}}</h1>
-                    </a>
-                    {% endif %}
-                    {% for imp in dynamics.filetree.afterTitle %}
-                        {% include imp %}
-                    {% endfor %}
-                </div>
-
-                <div class="navbar-actions">
-                    {% set slotName = "navbar.actions" %}{% include "components/pluginSlot.njk" %}
-                    {% include "components/pagePanelButton.njk" %}
-                </div>
-            </nav>
-        </div>
-
-        <div x-show="showFilesMobile && !isDesktop" @click="showFilesMobile = false" style="display:none;" class="fullpage-overlay"></div>
-
-      <div class="filetree-wrapper" x-show.important="isDesktop || showFilesMobile" style="display: none;">
+      <div class="filetree-wrapper" style="display: flex;">
       <nav class="filetree-sidebar">
+        <div class="panel-collapse-row panel-collapse-row-left">
+            <button type="button"
+                    class="panel-collapse-btn"
+                    data-panel-toggle="left"
+                    data-panel-action="collapse"
+                    aria-label="Hide file list"
+                    title="Hide file list">
+                <i data-lucide="panel-left-close" aria-hidden="true"></i>
+                <span>Hide</span>
+            </button>
+        </div>
         {% for imp in dynamics.filetree.beforeTitle %}
             {% include imp %}
         {% endfor %}
          {% if meta.siteLogoPath %}
          <a href="/" style="text-decoration: none; display: flex; justify-content: center;">
                    <img class="site-logo" src="{{meta.siteLogoPath}}" alt="{{meta.siteName}}">
-         </a>
-         {% else %}
-         <a href="/" style="text-decoration: none; text-align: center;">
-                   <h1 style="text-align:center;">{{meta.siteName}}</h1>
          </a>
          {% endif %}
          {% for imp in dynamics.filetree.afterTitle %}
