@@ -4,14 +4,16 @@
         data-panel-toggle="left"
         aria-label="Toggle file list"
         title="Toggle file list">
-      <i data-lucide="chevron-right" aria-hidden="true"></i>
+      <i data-lucide="chevron-right" class="panel-icon panel-icon-closed" aria-hidden="true"></i>
+      <i data-lucide="chevron-left" class="panel-icon panel-icon-open" aria-hidden="true"></i>
 </button>
 <button type="button"
         class="panel-edge-toggle panel-edge-toggle-right"
         data-panel-toggle="right"
         aria-label="Toggle outline"
         title="Toggle outline">
-      <i data-lucide="chevron-left" aria-hidden="true"></i>
+      <i data-lucide="chevron-left" class="panel-icon panel-icon-closed" aria-hidden="true"></i>
+      <i data-lucide="chevron-right" class="panel-icon panel-icon-open" aria-hidden="true"></i>
 </button>
 
 <script>
@@ -23,6 +25,7 @@
 
       const hoverPeek = { left: false, right: false };
       const leaveTimers = { left: null, right: null };
+      let iconsReady = false;
 
       function isCompact() {
             return COMPACT_MQ.matches;
@@ -70,23 +73,17 @@
                   : document.querySelector('.sidebar#page-panel');
       }
 
-      function setToggleIcon(side, collapsed) {
-            const btn = toggleBtn(side);
-            if (!btn) return;
-            let icon = btn.querySelector('[data-lucide]');
-            if (!icon) {
-                  icon = document.createElement('i');
-                  icon.setAttribute('aria-hidden', 'true');
-                  btn.appendChild(icon);
+      function ensureIcons() {
+            if (iconsReady) return;
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                  document.querySelectorAll('.panel-edge-toggle').forEach((btn) => {
+                        window.lucide.createIcons({
+                              nodes: [btn],
+                              attrs: { class: ['svg-icon'] },
+                        });
+                  });
+                  iconsReady = true;
             }
-            // Closed → chevron points toward the panel (open direction).
-            // Open → chevron flips (close direction).
-            const name = side === 'left'
-                  ? (collapsed ? 'chevron-right' : 'chevron-left')
-                  : (collapsed ? 'chevron-left' : 'chevron-right');
-            icon.setAttribute('data-lucide', name);
-            // Drop any previous SVG so lucide can re-render.
-            btn.querySelectorAll('svg').forEach((svg) => svg.remove());
       }
 
       function applyState() {
@@ -109,19 +106,14 @@
             root.classList.toggle('compact-panels', isCompact());
             root.classList.add('dg-panel-boot');
 
-            // Keep body in sync for any legacy selectors.
             document.body.classList.toggle('left-panel-collapsed', leftPinned);
             document.body.classList.toggle('right-panel-collapsed', rightPinned);
             document.body.classList.toggle('left-panel-peek', leftPeek && leftPinned);
             document.body.classList.toggle('right-panel-peek', rightPeek && rightPinned);
             document.body.classList.toggle('compact-panels', isCompact());
 
-            setToggleIcon('left', leftPinned);
-            setToggleIcon('right', rightPinned);
-
-            if (window.lucide && typeof window.lucide.createIcons === 'function') {
-                  window.lucide.createIcons({ attrs: { class: ['svg-icon'] } });
-            }
+            // Icons are swapped via CSS; only create lucide SVGs once.
+            ensureIcons();
       }
 
       function setCollapsed(side, collapsed) {
@@ -213,7 +205,7 @@
             }
 
             if (inLeft && leftOpen) {
-                  const item = evt.target.closest('a.filename, .notelink a, .notelink');
+                  const item = evt.target.closest('a.notelink, a.filename, .notelink a, .deadline-link');
                   if (item) setCollapsed('left', true);
                   return;
             }
@@ -227,6 +219,14 @@
             bindHover('left');
             bindHover('right');
             applyState();
+            // Lucide may load after DOMContentLoaded.
+            if (!iconsReady) {
+                  const t = setInterval(() => {
+                        ensureIcons();
+                        if (iconsReady) clearInterval(t);
+                  }, 50);
+                  setTimeout(() => clearInterval(t), 3000);
+            }
       }
 
       COMPACT_MQ.addEventListener('change', () => {

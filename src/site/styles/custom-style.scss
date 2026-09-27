@@ -29,13 +29,20 @@ body {
     min-width: var(--dg-filetree-width) !important;
     justify-content: flex-start !important;
     z-index: 30;
+    height: 100%;
+    align-items: stretch;
 }
 
 .filetree-sidebar {
     padding-left: 8px;
     margin-left: 0;
     max-width: 100%;
+    width: 100%;
+    height: 100%;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 
     // Match left file-list / folder text to right headings list size.
     .filename,
@@ -44,6 +51,38 @@ body {
     .foldername-wrapper {
         font-size: var(--dg-toc-font-size, 1rem) !important;
         line-height: 1.5;
+    }
+
+    // Whole highlighted row is the hit target (note = open file, folder = toggle).
+    a.notelink {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        box-sizing: border-box;
+        cursor: pointer;
+        text-decoration: none !important;
+        color: inherit;
+
+        &:hover {
+            text-decoration: none !important;
+        }
+
+        .filename {
+            pointer-events: none;
+        }
+    }
+
+    .foldername-wrapper {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        box-sizing: border-box;
+        cursor: pointer;
+        border-radius: 0;
+
+        &:hover {
+            background-color: var(--dg-notelink-hover-bg, rgba(255, 255, 255, 0.05));
+        }
     }
 
     // Invert file-list colors: only the open note is accent-colored.
@@ -60,10 +99,52 @@ body {
         font-weight: 600;
     }
 
+    .filetree-scroll {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+    }
+
     // No Digital Garden / site-name heading in the filetree.
-    > a.site-name-link,
-    > a:not(:has(img)) {
+    > a.site-name-link {
         display: none !important;
+    }
+}
+
+// Bottom-of-menu upcoming deadlines from «Формы контроля».
+.deadlines-block {
+    flex-shrink: 0;
+    margin-top: auto;
+    padding: 12px 8px 16px;
+    border-top: 1px solid var(--background-modifier-border, rgba(128, 128, 128, 0.35));
+    font-size: 0.85rem;
+    line-height: 1.45;
+}
+
+.deadline-line {
+    display: block;
+    margin: 0 0 0.55em;
+    color: var(--text-muted);
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
+.deadline-label {
+    color: var(--text-muted);
+    margin-right: 0.25em;
+    white-space: nowrap;
+}
+
+.deadline-link {
+    color: var(--text-muted);
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+        color: var(--text-accent, var(--text-normal));
+        text-decoration: underline;
     }
 }
 
@@ -169,6 +250,7 @@ html:not(.dg-panel-boot) .sidebar#page-panel {
 }
 
 .panel-edge-toggle {
+    --panel-toggle-icon: var(--text-muted);
     position: fixed;
     top: 12px;
     z-index: 60;
@@ -181,21 +263,53 @@ html:not(.dg-panel-boot) .sidebar#page-panel {
     margin: 0;
     border: 1px solid var(--background-modifier-border, var(--background-secondary-alt, #333));
     background: var(--background-secondary, #1e1e1e);
-    color: var(--text-muted);
+    color: var(--panel-toggle-icon);
     border-radius: 6px;
     cursor: pointer;
     line-height: 1;
+    // Stable icon color: never flash white↔black on hover / state / nav.
+    transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-.panel-edge-toggle:hover {
-    color: var(--text-normal);
+.panel-edge-toggle:hover,
+.panel-edge-toggle:focus,
+.panel-edge-toggle:focus-visible,
+.panel-edge-toggle:active {
+    color: var(--panel-toggle-icon);
     border-color: var(--text-faint);
+    outline: none;
 }
 
 .panel-edge-toggle i,
-.panel-edge-toggle svg {
+.panel-edge-toggle svg,
+.panel-edge-toggle .panel-icon,
+.panel-edge-toggle .svg-icon {
     width: 18px;
     height: 18px;
+    color: var(--panel-toggle-icon) !important;
+    stroke: var(--panel-toggle-icon) !important;
+    fill: none !important;
+    opacity: 1 !important;
+    transition: none !important;
+}
+
+// Dual chevrons: CSS swap only (lucide created once) — no color swap.
+.panel-edge-toggle .panel-icon-closed {
+    display: none;
+}
+
+.panel-edge-toggle .panel-icon-open {
+    display: inline-flex;
+}
+
+html.left-panel-collapsed .panel-edge-toggle-left .panel-icon-closed,
+html.right-panel-collapsed .panel-edge-toggle-right .panel-icon-closed {
+    display: inline-flex;
+}
+
+html.left-panel-collapsed .panel-edge-toggle-left .panel-icon-open,
+html.right-panel-collapsed .panel-edge-toggle-right .panel-icon-open {
+    display: none;
 }
 
 .panel-edge-toggle-left {
