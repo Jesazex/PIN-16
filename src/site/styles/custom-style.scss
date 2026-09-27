@@ -259,6 +259,53 @@ body.right-panel-collapsed .content:not(.canvas-page) {
     margin-right: 16px !important;
 }
 
+// Desktop hover peek: slide the pinned-closed panel out as an overlay without
+// changing the pinned click state or content margins.
+@media (min-width: 1001px) {
+    body.left-panel-collapsed.left-panel-peek .filetree-wrapper {
+        width: var(--dg-filetree-width) !important;
+        min-width: var(--dg-filetree-width) !important;
+        max-width: var(--dg-filetree-width) !important;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        overflow: auto !important;
+        z-index: 50;
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.28);
+    }
+
+    body.left-panel-collapsed.left-panel-peek .content:not(.canvas-page) {
+        margin-left: 16px !important;
+    }
+
+    body.right-panel-collapsed.right-panel-peek .sidebar#page-panel {
+        width: var(--dg-sidebar-max-width) !important;
+        min-width: var(--dg-sidebar-max-width) !important;
+        max-width: var(--dg-sidebar-max-width) !important;
+        padding: 10px 0 !important;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        overflow: auto !important;
+        z-index: 50;
+        box-shadow: -4px 0 24px rgba(0, 0, 0, 0.28);
+    }
+
+    body.right-panel-collapsed.right-panel-peek .sidebar#page-panel .page-panel-header {
+        display: none;
+    }
+
+    body.right-panel-collapsed.right-panel-peek .content:not(.canvas-page) {
+        margin-right: 16px !important;
+    }
+
+    // While peeking a collapsed panel, keep the edge Show button visible on top.
+    body.left-panel-peek .panel-edge-toggle-left,
+    body.right-panel-peek .panel-edge-toggle-right {
+        z-index: 51;
+    }
+}
+
 // --- Compact (phone) fit: same chrome, no horizontal scroll ----------------
 @media (max-width: 1000px) {
     body {
