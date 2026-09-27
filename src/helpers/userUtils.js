@@ -1,7 +1,11 @@
+const { getControlDeadlines } = require("./deadlinesUtils");
+
 // Put your computations here.
 
 function userComputed(data) {
-  return {};
+  return {
+    controlDeadlines: getControlDeadlines(data),
+  };
 }
 
 exports.userComputed = userComputed;

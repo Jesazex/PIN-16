@@ -1,0 +1,11 @@
+{%- set deadlines = userComputed.controlDeadlines if userComputed else [] -%}
+{%- if deadlines and deadlines.length -%}
+<div class="deadlines-block">
+  {%- for line in deadlines -%}
+  <div class="deadline-line">
+    <span class="deadline-label">{{ line.label }}</span>
+    <a class="deadline-link" href="{{ line.href }}">{{ line.linkText }}</a>
+  </div>
+  {%- endfor -%}
+</div>
+{%- endif -%}

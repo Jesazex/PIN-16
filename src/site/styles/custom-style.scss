@@ -14,6 +14,11 @@ body {
     --dg-content-padding-top: 36px;
     --dg-content-padding-top-mobile: 28px;
     --dg-compact-panel-width: min(250px, 85vw);
+    // Tighter nest indent so deep folders fit the side menu.
+    --dg-inner-folder-margin: 6px;
+    --dg-filelist-margin: 4px;
+    --dg-folder-margin: 2px 0;
+    --dg-notelink-padding: 3px 6px 3px 8px;
 }
 
 html,
@@ -29,13 +34,21 @@ body {
     min-width: var(--dg-filetree-width) !important;
     justify-content: flex-start !important;
     z-index: 30;
+    height: 100%;
+    align-items: stretch;
 }
 
 .filetree-sidebar {
     padding-left: 8px;
     margin-left: 0;
     max-width: 100%;
+    width: 100%;
+    height: 100%;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-x: hidden;
 
     // Match left file-list / folder text to right headings list size.
     .filename,
@@ -44,6 +57,66 @@ body {
     .foldername-wrapper {
         font-size: var(--dg-toc-font-size, 1rem) !important;
         line-height: 1.5;
+    }
+
+    // Whole highlighted row is the hit target (note = open file, folder = toggle).
+    // Keep labels left-aligned (do not use space-evenly across full width).
+    a.notelink {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        cursor: pointer;
+        text-decoration: none !important;
+        color: inherit;
+
+        &:hover {
+            text-decoration: none !important;
+        }
+
+        .filename {
+            pointer-events: none;
+        }
+    }
+
+    .foldername-wrapper,
+    .foldername-wrapper.align-icon {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 0.2em;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        cursor: pointer;
+        border-radius: 0;
+
+        &:hover {
+            background-color: var(--dg-notelink-hover-bg, rgba(255, 255, 255, 0.05));
+        }
+
+        i, svg {
+            flex-shrink: 0;
+        }
+
+        .foldername {
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+    }
+
+    // Align root-level note labels with folder names (after chevron).
+    > .folder > div:not(.filelist) > a.notelink,
+    .filetree-scroll > div:not(.filelist) > a.notelink {
+        margin-left: 0;
+        padding-left: calc(var(--dg-folder-icon-size, 14px) + 0.2em + 2px);
+    }
+
+    .filename {
+        min-width: 0;
+        overflow-wrap: anywhere;
     }
 
     // Invert file-list colors: only the open note is accent-colored.
@@ -60,10 +133,64 @@ body {
         font-weight: 600;
     }
 
+    .filetree-scroll {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .inner-folder,
+    .filelist {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
     // No Digital Garden / site-name heading in the filetree.
-    > a.site-name-link,
-    > a:not(:has(img)) {
+    > a.site-name-link {
         display: none !important;
+    }
+}
+
+// Bottom-of-menu upcoming deadlines from «Формы контроля».
+.deadlines-block {
+    flex-shrink: 0;
+    margin-top: auto;
+    padding: 12px 8px 16px;
+    border-top: 1px solid var(--background-modifier-border, rgba(128, 128, 128, 0.35));
+    font-size: 0.85rem;
+    line-height: 1.45;
+}
+
+.deadline-line {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1em;
+    margin: 0 0 0.7em;
+    color: var(--text-muted);
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
+.deadline-label {
+    display: block;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.deadline-link {
+    display: inline-block;
+    color: var(--text-muted);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+
+    &:hover,
+    &:focus-visible {
+        color: var(--text-accent, var(--text-normal));
+        text-decoration: underline;
     }
 }
 
@@ -159,67 +286,91 @@ body {
     display: none !important;
 }
 
-// --- Panel collapse / expand -----------------------------------------------
-.panel-collapse-row {
-    display: flex;
-    flex-shrink: 0;
-    margin-bottom: 8px;
+// --- Fixed corner panel toggles (icon-only, never move) --------------------
+// Before panelBoot.njk runs, keep drawers hidden to avoid an open→close flash.
+html:not(.dg-panel-boot) .filetree-wrapper,
+html:not(.dg-panel-boot) .sidebar#page-panel {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
 }
 
-.panel-collapse-row-left {
-    justify-content: flex-end;
-}
-
-.panel-collapse-row-right {
-    justify-content: flex-start;
-}
-
-.panel-collapse-btn,
 .panel-edge-toggle {
+    --panel-toggle-icon: var(--text-muted);
+    position: fixed;
+    top: 12px;
+    z-index: 60;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    margin: 0;
     border: 1px solid var(--background-modifier-border, var(--background-secondary-alt, #333));
     background: var(--background-secondary, #1e1e1e);
-    color: var(--text-muted);
+    color: var(--panel-toggle-icon);
     border-radius: 6px;
-    padding: 6px 10px;
-    font-size: 0.8rem;
     cursor: pointer;
     line-height: 1;
+    // Stable icon color: never flash white↔black on hover / state / nav.
+    transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-.panel-collapse-btn:hover,
-.panel-edge-toggle:hover {
-    color: var(--text-normal);
+.panel-edge-toggle:hover,
+.panel-edge-toggle:focus,
+.panel-edge-toggle:focus-visible,
+.panel-edge-toggle:active {
+    color: var(--panel-toggle-icon);
     border-color: var(--text-faint);
+    outline: none;
 }
 
-.panel-collapse-btn i,
-.panel-collapse-btn svg,
 .panel-edge-toggle i,
-.panel-edge-toggle svg {
-    width: 16px;
-    height: 16px;
+.panel-edge-toggle svg,
+.panel-edge-toggle .panel-icon,
+.panel-edge-toggle .svg-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--panel-toggle-icon) !important;
+    stroke: var(--panel-toggle-icon) !important;
+    fill: none !important;
+    opacity: 1 !important;
+    transition: none !important;
 }
 
-.panel-edge-toggle {
-    position: fixed;
-    top: 16px;
-    z-index: 40;
-    padding: 8px 10px;
+// Dual chevrons: CSS swap only (lucide created once) — no color swap.
+.panel-edge-toggle .panel-icon-closed {
+    display: none;
+}
+
+.panel-edge-toggle .panel-icon-open {
+    display: inline-flex;
+}
+
+html.left-panel-collapsed .panel-edge-toggle-left .panel-icon-closed,
+html.right-panel-collapsed .panel-edge-toggle-right .panel-icon-closed {
+    display: inline-flex;
+}
+
+html.left-panel-collapsed .panel-edge-toggle-left .panel-icon-open,
+html.right-panel-collapsed .panel-edge-toggle-right .panel-icon-open {
+    display: none;
 }
 
 .panel-edge-toggle-left {
     left: 10px;
+    right: auto;
 }
 
 .panel-edge-toggle-right {
     right: 10px;
+    left: auto;
 }
 
-.panel-edge-toggle[hidden],
-.panel-collapse-btn[hidden] {
+// Legacy in-panel Hide rows (removed from templates) — keep suppressed.
+.panel-collapse-row,
+.panel-collapse-btn {
     display: none !important;
 }
 
@@ -241,19 +392,10 @@ body {
         max-width: var(--dg-sidebar-max-width) !important;
     }
 
-    // Keep search fully below the fixed Show button (and Hide control).
+    // Keep search fully below the fixed corner toggle.
     .filetree-sidebar {
         padding-top: 52px;
         position: relative;
-    }
-
-    .filetree-sidebar .panel-collapse-row-left {
-        position: absolute;
-        top: 12px;
-        right: 8px;
-        left: auto;
-        margin: 0;
-        z-index: 2;
     }
 
     .filetree-sidebar .search-button {
@@ -261,7 +403,7 @@ body {
     }
 
     // --- Pinned-closed, not hovering: hidden --------------------------------
-    body.left-panel-collapsed:not(.left-panel-peek) .filetree-wrapper {
+    html.left-panel-collapsed:not(.left-panel-peek) .filetree-wrapper {
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
@@ -271,7 +413,7 @@ body {
         box-shadow: none;
     }
 
-    body.right-panel-collapsed:not(.right-panel-peek) .sidebar#page-panel {
+    html.right-panel-collapsed:not(.right-panel-peek) .sidebar#page-panel {
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
@@ -282,13 +424,13 @@ body {
         box-shadow: none;
     }
 
-    body.right-panel-collapsed:not(.right-panel-peek) .sidebar#page-panel .page-panel-header {
+    html.right-panel-collapsed:not(.right-panel-peek) .sidebar#page-panel .page-panel-header {
         display: none;
     }
 
     // --- Hover peek (pinned closed): overlay over text, no layout shift -----
-    body.left-panel-collapsed.left-panel-peek .filetree-wrapper,
-    body.right-panel-collapsed.right-panel-peek .sidebar#page-panel {
+    html.left-panel-collapsed.left-panel-peek .filetree-wrapper,
+    html.right-panel-collapsed.right-panel-peek .sidebar#page-panel {
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
@@ -299,21 +441,21 @@ body {
     }
 
     // Peek must not narrow the article.
-    body.left-panel-collapsed .content:not(.canvas-page) {
+    html.left-panel-collapsed .content:not(.canvas-page) {
         margin-left: 48px !important;
     }
 
-    body.right-panel-collapsed .content:not(.canvas-page) {
+    html.right-panel-collapsed .content:not(.canvas-page) {
         margin-right: 48px !important;
     }
 
-    body.left-panel-peek .panel-edge-toggle-left,
-    body.right-panel-peek .panel-edge-toggle-right {
-        z-index: 51;
+    html.left-panel-peek .panel-edge-toggle-left,
+    html.right-panel-peek .panel-edge-toggle-right {
+        z-index: 61;
     }
 
     // --- Click-pinned open: in-flow — article narrows, no overlay on text ---
-    body:not(.left-panel-collapsed) .filetree-wrapper {
+    html:not(.left-panel-collapsed) .filetree-wrapper {
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
@@ -323,7 +465,7 @@ body {
         box-shadow: none;
     }
 
-    body:not(.right-panel-collapsed) .sidebar#page-panel {
+    html:not(.right-panel-collapsed) .sidebar#page-panel {
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
@@ -334,28 +476,24 @@ body {
         padding: 10px 0 !important;
     }
 
-    body:not(.left-panel-collapsed) .content:not(.canvas-page) {
+    html:not(.left-panel-collapsed) .content:not(.canvas-page) {
         margin-left: calc(var(--dg-filetree-width) + var(--dg-filetree-gap)) !important;
     }
 
-    body:not(.right-panel-collapsed) .content:not(.canvas-page) {
+    html:not(.right-panel-collapsed) .content:not(.canvas-page) {
         margin-right: calc(var(--dg-sidebar-max-width) + var(--dg-sidebar-gap)) !important;
     }
 
     @media (max-width: 1400px) {
-        body:not(.left-panel-collapsed) .content:not(.canvas-page) {
+        html:not(.left-panel-collapsed) .content:not(.canvas-page) {
             margin-left: calc(var(--dg-filetree-width) + 16px) !important;
         }
 
-        body:not(.right-panel-collapsed) .content:not(.canvas-page) {
+        html:not(.right-panel-collapsed) .content:not(.canvas-page) {
             margin-right: 20px !important;
         }
     }
 
-    body:not(.left-panel-collapsed) .panel-collapse-row-left,
-    body:not(.right-panel-collapsed) .panel-collapse-row-right {
-        z-index: 31;
-    }
 }
 
 // Compact (phone): keep width-collapse hide used by overlay drawers.
@@ -365,7 +503,7 @@ body {
         transition: width 0.2s ease, min-width 0.2s ease, max-width 0.2s ease, opacity 0.15s ease, padding 0.2s ease;
     }
 
-    body.left-panel-collapsed .filetree-wrapper {
+    html.left-panel-collapsed .filetree-wrapper {
         width: 0 !important;
         min-width: 0 !important;
         max-width: 0 !important;
@@ -375,7 +513,7 @@ body {
         overflow: hidden !important;
     }
 
-    body.right-panel-collapsed .sidebar#page-panel {
+    html.right-panel-collapsed .sidebar#page-panel {
         width: 0 !important;
         min-width: 0 !important;
         max-width: 0 !important;
@@ -386,7 +524,7 @@ body {
         overflow: hidden !important;
     }
 
-    body.right-panel-collapsed .sidebar#page-panel .page-panel-header {
+    html.right-panel-collapsed .sidebar#page-panel .page-panel-header {
         display: none;
     }
 }
@@ -441,7 +579,7 @@ body {
         overflow: hidden;
     }
 
-    body:not(.right-panel-collapsed) .sidebar#page-panel {
+    html:not(.right-panel-collapsed) .sidebar#page-panel {
         visibility: visible !important;
     }
 
@@ -497,14 +635,14 @@ body {
         box-sizing: border-box;
     }
 
-    body.left-panel-collapsed .content:not(.canvas-page),
-    body.right-panel-collapsed .content:not(.canvas-page),
-    body.left-panel-collapsed.right-panel-collapsed .content:not(.canvas-page) {
+    html.left-panel-collapsed .content:not(.canvas-page),
+    html.right-panel-collapsed .content:not(.canvas-page),
+    html.left-panel-collapsed.right-panel-collapsed .content:not(.canvas-page) {
         margin-left: 12px !important;
         margin-right: 12px !important;
     }
 
-    body.left-panel-collapsed .filetree-wrapper {
+    html.left-panel-collapsed .filetree-wrapper {
         width: 0 !important;
         min-width: 0 !important;
         max-width: 0 !important;
@@ -515,7 +653,7 @@ body {
         box-shadow: none !important;
     }
 
-    body.right-panel-collapsed .sidebar#page-panel {
+    html.right-panel-collapsed .sidebar#page-panel {
         width: 0 !important;
         min-width: 0 !important;
         max-width: 0 !important;
@@ -527,64 +665,17 @@ body {
         box-shadow: none !important;
     }
 
-    body.right-panel-collapsed .sidebar#page-panel * {
+    html.right-panel-collapsed .sidebar#page-panel * {
         visibility: hidden !important;
     }
 
-    // Show + Hide share the same fixed corner slots so Hide never jumps
-    // downward when a panel opens (not pushed into the panel body).
-    .panel-edge-toggle,
-    .panel-collapse-row {
-        position: fixed;
-        top: 12px;
-        z-index: 45;
-        margin: 0;
-        padding: 0;
-    }
-
-    .panel-edge-toggle {
-        padding: 8px;
-    }
-
-    .panel-edge-toggle-left,
-    .panel-collapse-row-left {
+    // Corner toggles stay fixed (same slots as desktop).
+    .panel-edge-toggle-left {
         left: 8px;
-        right: auto;
-        justify-content: flex-start;
     }
 
-    .panel-edge-toggle-right,
-    .panel-collapse-row-right {
+    .panel-edge-toggle-right {
         right: 8px;
-        left: auto;
-        justify-content: flex-end;
-    }
-
-    // Icon-only Hide on phone to keep controls compact.
-    .panel-collapse-btn span {
-        display: none;
-    }
-
-    .panel-collapse-btn {
-        padding: 8px;
-    }
-
-    // Collapse buttons are fixed outside the drawer; keep them visible when
-    // the open panel would otherwise clip/hide descendants.
-    body:not(.right-panel-collapsed) .panel-collapse-row-right,
-    body:not(.right-panel-collapsed) .panel-collapse-row-right .panel-collapse-btn,
-    body:not(.right-panel-collapsed) .panel-collapse-row-right .panel-collapse-btn * {
-        visibility: visible !important;
-        pointer-events: auto !important;
-        opacity: 1 !important;
-    }
-
-    body:not(.left-panel-collapsed) .panel-collapse-row-left,
-    body:not(.left-panel-collapsed) .panel-collapse-row-left .panel-collapse-btn,
-    body:not(.left-panel-collapsed) .panel-collapse-row-left .panel-collapse-btn * {
-        visibility: visible !important;
-        pointer-events: auto !important;
-        opacity: 1 !important;
     }
 
     .content > header > h1 {
