@@ -107,22 +107,14 @@ body {
     }
 }
 
-// Central content grows into the space between the edge-hugging sidebars.
+// Article keeps a stable full-viewport column. Side lists overlay on top
+// of this text — they must never push or narrow it.
 .content:not(.canvas-page) {
-    margin-left: calc(var(--dg-filetree-width) + var(--dg-filetree-gap)) !important;
-    margin-right: calc(var(--dg-sidebar-max-width) + var(--dg-sidebar-gap)) !important;
+    margin-left: 48px !important;
+    margin-right: 48px !important;
     max-width: none !important;
     width: auto;
     box-sizing: border-box;
-    transition: margin-left 0.2s ease, margin-right 0.2s ease;
-}
-
-@media (max-width: 1400px) and (min-width: 1001px) {
-    .content:not(.canvas-page) {
-        margin-left: calc(var(--dg-filetree-width) + 16px) !important;
-        margin-right: 20px !important;
-        max-width: none !important;
-    }
 }
 
 // Note/page title: large and centered in the content area.
@@ -221,88 +213,123 @@ body {
     display: none !important;
 }
 
-.filetree-wrapper,
-.sidebar#page-panel {
-    transition: width 0.2s ease, min-width 0.2s ease, max-width 0.2s ease, opacity 0.15s ease, padding 0.2s ease;
-}
-
-body.left-panel-collapsed .filetree-wrapper {
-    width: 0 !important;
-    min-width: 0 !important;
-    max-width: 0 !important;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    overflow: hidden !important;
-}
-
-body.left-panel-collapsed .content:not(.canvas-page) {
-    margin-left: 16px !important;
-}
-
-body.right-panel-collapsed .sidebar#page-panel {
-    width: 0 !important;
-    min-width: 0 !important;
-    max-width: 0 !important;
-    padding: 0 !important;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    overflow: hidden !important;
-}
-
-body.right-panel-collapsed .sidebar#page-panel .page-panel-header {
-    display: none;
-}
-
-body.right-panel-collapsed .content:not(.canvas-page) {
-    margin-right: 16px !important;
-}
-
-// Desktop hover peek: slide the pinned-closed panel out as an overlay without
-// changing the pinned click state or content margins.
+// Desktop: lists drop over the article (overlay). No width-slide that
+// reflows the text column — appear/disappear with a short fade+drop.
 @media (min-width: 1001px) {
-    body.left-panel-collapsed.left-panel-peek .filetree-wrapper {
+    .filetree-wrapper,
+    .sidebar#page-panel {
+        position: fixed !important;
+        z-index: 50;
+        background-color: var(--background-secondary, #1e1e1e);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+        transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+        // Keep full panel size even while hidden so show is a drop, not a slide.
         width: var(--dg-filetree-width) !important;
         min-width: var(--dg-filetree-width) !important;
         max-width: var(--dg-filetree-width) !important;
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-        overflow: auto !important;
-        z-index: 50;
-        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.28);
     }
 
-    body.left-panel-collapsed.left-panel-peek .content:not(.canvas-page) {
-        margin-left: 16px !important;
-    }
-
-    body.right-panel-collapsed.right-panel-peek .sidebar#page-panel {
+    .sidebar#page-panel {
         width: var(--dg-sidebar-max-width) !important;
         min-width: var(--dg-sidebar-max-width) !important;
         max-width: var(--dg-sidebar-max-width) !important;
-        padding: 10px 0 !important;
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-        overflow: auto !important;
-        z-index: 50;
-        box-shadow: -4px 0 24px rgba(0, 0, 0, 0.28);
     }
 
-    body.right-panel-collapsed.right-panel-peek .sidebar#page-panel .page-panel-header {
+    .filetree-wrapper {
+        transform-origin: top left;
+    }
+
+    .sidebar#page-panel {
+        transform-origin: top right;
+    }
+
+    // Pinned-closed and not hovering: hide in place (no layout effect).
+    body.left-panel-collapsed:not(.left-panel-peek) .filetree-wrapper {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(-8px);
+        overflow: hidden !important;
+    }
+
+    body.right-panel-collapsed:not(.right-panel-peek) .sidebar#page-panel {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(-8px);
+        overflow: hidden !important;
+        padding: 10px 0 !important; // keep size; do not collapse width
+    }
+
+    body.right-panel-collapsed:not(.right-panel-peek) .sidebar#page-panel .page-panel-header {
         display: none;
     }
 
-    body.right-panel-collapsed.right-panel-peek .content:not(.canvas-page) {
-        margin-right: 16px !important;
+    // Open (pinned) or hover-peek: drop over the text.
+    body:not(.left-panel-collapsed) .filetree-wrapper,
+    body.left-panel-collapsed.left-panel-peek .filetree-wrapper,
+    body:not(.right-panel-collapsed) .sidebar#page-panel,
+    body.right-panel-collapsed.right-panel-peek .sidebar#page-panel {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0);
+        overflow: auto !important;
     }
 
-    // While peeking a collapsed panel, keep the edge Show button visible on top.
+    // Content width never depends on panel open/closed/peek.
+    body.left-panel-collapsed .content:not(.canvas-page),
+    body.right-panel-collapsed .content:not(.canvas-page),
+    body.left-panel-peek .content:not(.canvas-page),
+    body.right-panel-peek .content:not(.canvas-page),
+    body:not(.left-panel-collapsed) .content:not(.canvas-page),
+    body:not(.right-panel-collapsed) .content:not(.canvas-page) {
+        margin-left: 48px !important;
+        margin-right: 48px !important;
+        max-width: none !important;
+    }
+
     body.left-panel-peek .panel-edge-toggle-left,
     body.right-panel-peek .panel-edge-toggle-right {
         z-index: 51;
+    }
+
+    body:not(.left-panel-collapsed) .panel-collapse-row-left,
+    body:not(.right-panel-collapsed) .panel-collapse-row-right {
+        z-index: 51;
+    }
+}
+
+// Compact (phone): keep width-collapse hide used by overlay drawers.
+@media (max-width: 1000px) {
+    .filetree-wrapper,
+    .sidebar#page-panel {
+        transition: width 0.2s ease, min-width 0.2s ease, max-width 0.2s ease, opacity 0.15s ease, padding 0.2s ease;
+    }
+
+    body.left-panel-collapsed .filetree-wrapper {
+        width: 0 !important;
+        min-width: 0 !important;
+        max-width: 0 !important;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        overflow: hidden !important;
+    }
+
+    body.right-panel-collapsed .sidebar#page-panel {
+        width: 0 !important;
+        min-width: 0 !important;
+        max-width: 0 !important;
+        padding: 0 !important;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        overflow: hidden !important;
+    }
+
+    body.right-panel-collapsed .sidebar#page-panel .page-panel-header {
+        display: none;
     }
 }
 
