@@ -1,0 +1,25 @@
+{#- Apply pinned panel state on <html> before first paint to avoid open→close flash. -#}
+<script>
+(function () {
+      var LEFT_KEY = 'dg-left-panel-collapsed';
+      var RIGHT_KEY = 'dg-right-panel-collapsed';
+      var html = document.documentElement;
+      try {
+            var compact = window.matchMedia('(max-width: 1000px)').matches;
+            var leftRaw = sessionStorage.getItem(LEFT_KEY);
+            var rightRaw = sessionStorage.getItem(RIGHT_KEY);
+            var leftCollapsed = leftRaw === null ? compact : leftRaw === '1';
+            var rightCollapsed = rightRaw === null ? compact : rightRaw === '1';
+            // Mobile: only one panel open at a time.
+            if (compact && !leftCollapsed && !rightCollapsed) {
+                  rightCollapsed = true;
+            }
+            html.classList.toggle('left-panel-collapsed', leftCollapsed);
+            html.classList.toggle('right-panel-collapsed', rightCollapsed);
+            html.classList.toggle('compact-panels', compact);
+      } catch (e) {
+            html.classList.add('left-panel-collapsed', 'right-panel-collapsed');
+      }
+      html.classList.add('dg-panel-boot');
+})();
+</script>

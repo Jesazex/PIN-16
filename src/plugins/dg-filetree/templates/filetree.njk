@@ -30,17 +30,6 @@
 
       <div class="filetree-wrapper" style="display: flex;">
       <nav class="filetree-sidebar">
-        <div class="panel-collapse-row panel-collapse-row-left">
-            <button type="button"
-                    class="panel-collapse-btn"
-                    data-panel-toggle="left"
-                    data-panel-action="collapse"
-                    aria-label="Hide file list"
-                    title="Hide file list">
-                <i data-lucide="panel-left-close" aria-hidden="true"></i>
-                <span>Hide</span>
-            </button>
-        </div>
         {% for imp in dynamics.filetree.beforeTitle %}
             {% include imp %}
         {% endfor %}
