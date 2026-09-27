@@ -14,6 +14,11 @@ body {
     --dg-content-padding-top: 36px;
     --dg-content-padding-top-mobile: 28px;
     --dg-compact-panel-width: min(250px, 85vw);
+    // Tighter nest indent so deep folders fit the side menu.
+    --dg-inner-folder-margin: 6px;
+    --dg-filelist-margin: 4px;
+    --dg-folder-margin: 2px 0;
+    --dg-notelink-padding: 3px 6px 3px 8px;
 }
 
 html,
@@ -43,6 +48,7 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 0;
+    overflow-x: hidden;
 
     // Match left file-list / folder text to right headings list size.
     .filename,
@@ -54,10 +60,13 @@ body {
     }
 
     // Whole highlighted row is the hit target (note = open file, folder = toggle).
+    // Keep labels left-aligned (do not use space-evenly across full width).
     a.notelink {
         display: flex;
         align-items: center;
+        justify-content: flex-start;
         width: 100%;
+        max-width: 100%;
         box-sizing: border-box;
         cursor: pointer;
         text-decoration: none !important;
@@ -72,10 +81,14 @@ body {
         }
     }
 
-    .foldername-wrapper {
+    .foldername-wrapper,
+    .foldername-wrapper.align-icon {
         display: flex;
         align-items: center;
+        justify-content: flex-start;
+        gap: 0.2em;
         width: 100%;
+        max-width: 100%;
         box-sizing: border-box;
         cursor: pointer;
         border-radius: 0;
@@ -83,6 +96,27 @@ body {
         &:hover {
             background-color: var(--dg-notelink-hover-bg, rgba(255, 255, 255, 0.05));
         }
+
+        i, svg {
+            flex-shrink: 0;
+        }
+
+        .foldername {
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+    }
+
+    // Align root-level note labels with folder names (after chevron).
+    > .folder > div:not(.filelist) > a.notelink,
+    .filetree-scroll > div:not(.filelist) > a.notelink {
+        margin-left: 0;
+        padding-left: calc(var(--dg-folder-icon-size, 14px) + 0.2em + 2px);
+    }
+
+    .filename {
+        min-width: 0;
+        overflow-wrap: anywhere;
     }
 
     // Invert file-list colors: only the open note is accent-colored.
@@ -103,6 +137,13 @@ body {
         flex: 1 1 auto;
         min-height: 0;
         overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .inner-folder,
+    .filelist {
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
     // No Digital Garden / site-name heading in the filetree.
@@ -122,8 +163,11 @@ body {
 }
 
 .deadline-line {
-    display: block;
-    margin: 0 0 0.55em;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1em;
+    margin: 0 0 0.7em;
     color: var(--text-muted);
 
     &:last-child {
@@ -132,14 +176,16 @@ body {
 }
 
 .deadline-label {
+    display: block;
     color: var(--text-muted);
-    margin-right: 0.25em;
     white-space: nowrap;
 }
 
 .deadline-link {
+    display: inline-block;
     color: var(--text-muted);
     text-decoration: none;
+    overflow-wrap: anywhere;
 
     &:hover,
     &:focus-visible {
