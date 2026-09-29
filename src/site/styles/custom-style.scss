@@ -771,6 +771,30 @@ html.panel-resizing .sidebar#page-panel {
     .content pre {
         overflow-x: auto;
     }
+
+    // Wide formulas stay readable: scroll them instead of clipping or shrinking.
+    .content mjx-container[display="true"] {
+        display: block !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        text-align: start !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
+        scrollbar-width: thin;
+    }
+
+    .content mjx-container[display="true"] svg {
+        max-width: none !important;
+    }
+
+    .content mjx-container:not([display="true"]) {
+        display: inline-block;
+        max-width: 100%;
+        overflow-x: auto;
+        vertical-align: middle;
+        overscroll-behavior-x: contain;
+    }
 }
 
 // Netlify / Forestry badge guards (unchanged from prior PR work).
