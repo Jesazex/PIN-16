@@ -13,6 +13,22 @@ module.exports = {
         .trim();
     });
 
+    // Section headings, kept separate so a phrase cannot span two headings.
+    eleventyConfig.addFilter("headingsForSearch", function (content) {
+      if (!content) return [];
+      const found = [];
+      const re = /<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/gi;
+      let match;
+      while ((match = re.exec(String(content))) !== null) {
+        const text = match[1]
+          .replace(/<[^>]*>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (text) found.push(text);
+      }
+      return found;
+    });
+
     eleventyConfig.addFilter("searchableTags", function (str) {
       let tags;
       let match = str && str.match(tagRegex);
