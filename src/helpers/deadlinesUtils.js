@@ -21,19 +21,21 @@ const MONTHS = {
 const FEMININE_TYPES = new Set(["КР", "ЛР"]);
 
 /** 
- * Нормализует любую дату, переводя её в полночь по Московскому времени (MSK).
- * Это гарантирует корректную работу кода на зарубежных серверах.
+ * Кроссплатформенный перевод даты в полночь по Московскому времени (MSK, UTC+3).
+ * Работает через математический сдвиг таймстампа, что исключает ошибки парсинга на серверах GitHub.
  */
 function startOfMoscowDay(date) {
-  // Переводим системное время в строковое представление по часовому поясу Москвы
-  const mskString = date.toLocaleString("en-US", { timeZone: "Europe/Moscow" });
-  const mskDate = new Date(mskString);
+  // Получаем чистый UTC-таймстамп в миллисекундах
+  const utcTimestamp = date.getTime() + (date.getTimezoneOffset() * 60000);
+  // Добавляем ровно 3 часа (Московский сдвиг UTC+3)
+  const mskTimestamp = utcTimestamp + (3 * 3600000);
+  const mskDate = new Date(mskTimestamp);
   
-  // Возвращаем дату, сброшенную на локальную полночь
+  // Возвращаем объект локальной даты, сброшенный на полночь
   return new Date(mskDate.getFullYear(), mskDate.getMonth(), mskDate.getDate());
 }
 
-/** Сохраняем оригинальное имя функции для совместимости с остальным кодом */
+/** Сохраняем оригинальное имя функции для совместимости с Eleventy/Obsidian */
 function startOfDay(date) {
   return startOfMoscowDay(date);
 }
@@ -53,11 +55,11 @@ function parseDateHeading(heading) {
   };
 }
 
-/** Вычисляет предстоящую дату с учетом года в московском часовом поясе */
+/** Вычисляет предстоящую дату с учетом московского года */
 function resolveUpcomingDate(day, month, today = new Date()) {
   const today0 = startOfMoscowDay(today);
   
-  // Создаем дату-кандидата, используя текущий год в Москве
+  // Создаем дату-кандидата в локальном контексте
   let candidate = new Date(today0.getFullYear(), month, day);
   
   if (candidate < today0) {
@@ -66,16 +68,15 @@ function resolveUpcomingDate(day, month, today = new Date()) {
   return candidate;
 }
 
-/** Безопасно считает разницу в календарных днях без влияния часовых поясов и перевода часов */
+/** Безопасно считает разницу в днях */
 function daysUntil(target, today = new Date()) {
   const mskToday = startOfMoscowDay(today);
   const mskTarget = startOfMoscowDay(target);
   
-  // Конвертируем московские полночи в чистый UTC-таймстамп для точного вычитания
+  // Переводим полночи в UTC таймстампы для исключения влияния часовых поясов сервера
   const a = Date.UTC(mskToday.getFullYear(), mskToday.getMonth(), mskToday.getDate());
   const b = Date.UTC(mskTarget.getFullYear(), mskTarget.getMonth(), mskTarget.getDate());
   
-  // Вычисляем чистую разницу в днях
   return Math.floor((b - a) / 86400000);
 }
 
@@ -135,7 +136,7 @@ function notePathParts(item) {
 }
 
 /**
- * Собирает строки ближайших дедлайнов из заметок в папке "Формы контроля".
+ * Основная функция сбора дедлайнов.
  */
 function getControlDeadlines(data, today = new Date()) {
   const notes = (data.collections && data.collections.note) || [];
