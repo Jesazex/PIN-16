@@ -3,7 +3,29 @@
 (function () {
       var LEFT_KEY = 'dg-left-panel-collapsed';
       var RIGHT_KEY = 'dg-right-panel-collapsed';
+      var LEFT_WIDTH_KEY = 'dg-left-panel-width';
+      var RIGHT_WIDTH_KEY = 'dg-right-panel-width';
       var html = document.documentElement;
+
+      function clampPanelWidth(raw) {
+            var n = parseInt(raw, 10);
+            if (!n || n !== n) return 0;
+            var max = Math.min(640, Math.max(180, Math.floor(window.innerWidth * 0.85)));
+            var min = Math.min(180, max);
+            if (n < min) n = min;
+            if (n > max) n = max;
+            return n;
+      }
+
+      try {
+            var leftWidth = clampPanelWidth(localStorage.getItem(LEFT_WIDTH_KEY));
+            var rightWidth = clampPanelWidth(localStorage.getItem(RIGHT_WIDTH_KEY));
+            if (leftWidth) html.style.setProperty('--dg-panel-left-width', leftWidth + 'px');
+            if (rightWidth) html.style.setProperty('--dg-panel-right-width', rightWidth + 'px');
+      } catch (e) {
+            // ignore
+      }
+
       try {
             var compact = window.matchMedia('(max-width: 1000px)').matches;
             var leftRaw = sessionStorage.getItem(LEFT_KEY);

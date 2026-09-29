@@ -20,6 +20,8 @@
 (function () {
       const LEFT_KEY = 'dg-left-panel-collapsed';
       const RIGHT_KEY = 'dg-right-panel-collapsed';
+      const LEFT_WIDTH_KEY = 'dg-left-panel-width';
+      const RIGHT_WIDTH_KEY = 'dg-right-panel-width';
       const COMPACT_MQ = window.matchMedia('(max-width: 1000px)');
       const DESKTOP_MQ = window.matchMedia('(min-width: 1001px)');
 
@@ -158,6 +160,7 @@
             };
             const onLeave = (evt) => {
                   if (!isDesktop()) return;
+                  if (document.documentElement.classList.contains('panel-resizing')) return;
                   if (relatedStillInside(side, evt.relatedTarget)) return;
                   clearTimeout(leaveTimers[side]);
                   leaveTimers[side] = setTimeout(() => {
@@ -177,7 +180,109 @@
             }
       }
 
+      function clampPanelWidth(raw) {
+            const n = parseInt(raw, 10);
+            if (!n || n !== n) return 0;
+            const max = Math.min(640, Math.max(180, Math.floor(window.innerWidth * 0.85)));
+            const min = Math.min(180, max);
+            return Math.max(min, Math.min(max, n));
+      }
+
+      function widthKey(side) {
+            return side === 'left' ? LEFT_WIDTH_KEY : RIGHT_WIDTH_KEY;
+      }
+
+      function widthProp(side) {
+            return side === 'left' ? '--dg-panel-left-width' : '--dg-panel-right-width';
+      }
+
+      function setPanelWidth(side, px, persist) {
+            const value = clampPanelWidth(px);
+            if (!value) return;
+            document.documentElement.style.setProperty(widthProp(side), value + 'px');
+            const handle = document.querySelector(`[data-panel-resize="${side}"]`);
+            if (handle) handle.setAttribute('aria-valuenow', String(value));
+            if (!persist) return;
+            try {
+                  localStorage.setItem(widthKey(side), String(value));
+            } catch {
+                  // ignore
+            }
+      }
+
+      function applyStoredWidths() {
+            try {
+                  const left = localStorage.getItem(LEFT_WIDTH_KEY);
+                  const right = localStorage.getItem(RIGHT_WIDTH_KEY);
+                  if (left) setPanelWidth('left', left, false);
+                  if (right) setPanelWidth('right', right, false);
+            } catch {
+                  // ignore
+            }
+      }
+
+      function bindResizer(el) {
+            const side = el.getAttribute('data-panel-resize');
+            if (side !== 'left' && side !== 'right') return;
+            let startX = 0;
+            let startW = 0;
+
+            function currentWidth() {
+                  const panel = panelEl(side);
+                  return panel ? panel.getBoundingClientRect().width : 0;
+            }
+
+            function onPointerDown(evt) {
+                  if (evt.button !== undefined && evt.button !== 0) return;
+                  evt.preventDefault();
+                  evt.stopPropagation();
+                  startX = evt.clientX;
+                  startW = currentWidth();
+                  el.classList.add('is-dragging');
+                  document.documentElement.classList.add('panel-resizing');
+                  if (el.setPointerCapture) el.setPointerCapture(evt.pointerId);
+            }
+
+            function onPointerMove(evt) {
+                  if (!el.classList.contains('is-dragging')) return;
+                  const dx = evt.clientX - startX;
+                  const next = side === 'left' ? startW + dx : startW - dx;
+                  setPanelWidth(side, next, true);
+            }
+
+            function onPointerUp(evt) {
+                  if (!el.classList.contains('is-dragging')) return;
+                  el.classList.remove('is-dragging');
+                  document.documentElement.classList.remove('panel-resizing');
+                  if (el.releasePointerCapture) {
+                        try {
+                              el.releasePointerCapture(evt.pointerId);
+                        } catch {
+                              // already released
+                        }
+                  }
+            }
+
+            el.addEventListener('pointerdown', onPointerDown);
+            el.addEventListener('pointermove', onPointerMove);
+            el.addEventListener('pointerup', onPointerUp);
+            el.addEventListener('pointercancel', onPointerUp);
+            el.addEventListener('keydown', (evt) => {
+                  if (evt.key !== 'ArrowLeft' && evt.key !== 'ArrowRight') return;
+                  evt.preventDefault();
+                  const step = evt.shiftKey ? 40 : 16;
+                  const delta = evt.key === 'ArrowRight' ? step : -step;
+                  const signed = side === 'left' ? delta : -delta;
+                  setPanelWidth(side, currentWidth() + signed, true);
+            });
+      }
+
       document.addEventListener('click', (evt) => {
+            if (evt.target.closest('[data-panel-resize]')) {
+                  evt.preventDefault();
+                  evt.stopPropagation();
+                  return;
+            }
             const btn = evt.target.closest('[data-panel-toggle].panel-edge-toggle');
             if (btn) {
                   const side = btn.getAttribute('data-panel-toggle');
@@ -218,6 +323,8 @@
       function boot() {
             bindHover('left');
             bindHover('right');
+            document.querySelectorAll('[data-panel-resize]').forEach(bindResizer);
+            applyStoredWidths();
             applyState();
             // Lucide may load after DOMContentLoaded.
             if (!iconsReady) {
@@ -232,7 +339,12 @@
       COMPACT_MQ.addEventListener('change', () => {
             hoverPeek.left = false;
             hoverPeek.right = false;
+            applyStoredWidths();
             applyState();
+      });
+      window.addEventListener('resize', () => {
+            if (document.documentElement.classList.contains('panel-resizing')) return;
+            applyStoredWidths();
       });
       DESKTOP_MQ.addEventListener('change', () => {
             hoverPeek.left = false;

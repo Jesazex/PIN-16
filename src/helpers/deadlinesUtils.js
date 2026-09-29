@@ -20,13 +20,42 @@ const MONTHS = {
 
 const FEMININE_TYPES = new Set(["КР", "ЛР"]);
 
+const MOSCOW_TZ = "Europe/Moscow";
+
+/** Calendar year/month/day of an instant in Europe/Moscow (no DST, UTC+3). */
+function moscowYMD(instant) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: MOSCOW_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(instant);
+  const get = (type) => Number(parts.find((part) => part.type === type).value);
+  return { y: get("year"), m: get("month") - 1, d: get("day") };
+}
+
+/**
+ * Local Date whose calendar day is "today" in Moscow.
+ * Day math then uses these Y-M-D numbers, so the build server's timezone
+ * cannot shift the deadline.
+ */
+function moscowToday(now = new Date()) {
+  const { y, m, d } = moscowYMD(now);
+  return new Date(y, m, d);
+}
+
 function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
+function calendarUTC(date) {
+  const day = startOfDay(date);
+  return Date.UTC(day.getFullYear(), day.getMonth(), day.getDate());
+}
+
 function parseDateHeading(heading) {
   if (!heading || typeof heading !== "string") return null;
-  const match = heading.trim().match(/^На\s+(\d{1,2})\s+([А-Яа-яёЁ]+)\s*\$/i);
+  const match = heading.trim().match(/^На\s+(\d{1,2})\s+([А-Яа-яёЁ]+)\s*$/i);
   if (!match) return null;
   const day = parseInt(match[1], 10);
   const monthToken = match[2].toLowerCase();
@@ -40,7 +69,7 @@ function parseDateHeading(heading) {
 }
 
 /** Resolve calendar date: current year, or next year if already before today. */
-function resolveUpcomingDate(day, month, today = new Date()) {
+function resolveUpcomingDate(day, month, today = moscowToday()) {
   const today0 = startOfDay(today);
   let candidate = new Date(today0.getFullYear(), month, day);
   if (candidate < today0) {
@@ -49,9 +78,9 @@ function resolveUpcomingDate(day, month, today = new Date()) {
   return candidate;
 }
 
-function daysUntil(target, today = new Date()) {
-  const a = startOfDay(today).getTime();
-  const b = startOfDay(target).getTime();
+function daysUntil(target, today = moscowToday()) {
+  const a = calendarUTC(today);
+  const b = calendarUTC(target);
   return Math.round((b - a) / 86400000);
 }
 
@@ -71,14 +100,14 @@ function relativeSuffix(days) {
 function nearestAdjective(typeName) {
   if (FEMININE_TYPES.has(typeName)) return "Ближайшая";
   const lower = String(typeName || "").toLowerCase();
-  if (/[ая]я\$/i.test(lower)) return "Ближайшая";
+  if (/[ая]я$/i.test(lower)) return "Ближайшая";
   return "Ближайшее";
 }
 
 function extractHeadings(markdown) {
   if (!markdown) return [];
   const headings = [];
-  const re = /^(#{1,6})\s+(.+?)\s*\$/gm;
+  const re = /^(#{1,6})\s+(.+?)\s*$/gm;
   let m;
   while ((m = re.exec(markdown)) !== null) {
     headings.push(m[2].trim());
@@ -114,7 +143,7 @@ function notePathParts(item) {
  * Build upcoming-deadline lines from notes under "Формы контроля".
  * Returns [] when that folder is absent.
  */
-function getControlDeadlines(data, today = new Date()) {
+function getControlDeadlines(data, today = moscowToday()) {
   const notes = (data.collections && data.collections.note) || [];
   const byType = new Map();
 
@@ -186,6 +215,7 @@ function getControlDeadlines(data, today = new Date()) {
 
 module.exports = {
   ROOT_FOLDER,
+  moscowToday,
   parseDateHeading,
   resolveUpcomingDate,
   daysUntil,
