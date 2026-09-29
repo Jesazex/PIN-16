@@ -8,6 +8,10 @@ body {
     --dg-toc-max-height: none;
     --dg-filetree-gap: 24px;
     --dg-sidebar-gap: 24px;
+    // Drag-resize overrides (set on <html> from saved widths). Fall back to
+    // the layout defaults, including the compact widths set below.
+    --dg-panel-left: var(--dg-panel-left-width, var(--dg-filetree-width));
+    --dg-panel-right: var(--dg-panel-right-width, var(--dg-sidebar-max-width));
     --dg-sidebar-container-padding: 0;
     --dg-filetree-padding: 10px 12px 10px 8px;
     --dg-content-max-width: 100%;
@@ -30,8 +34,8 @@ body {
 // Left filetree flush to the left edge of the viewport.
 .filetree-wrapper {
     left: 0 !important;
-    width: var(--dg-filetree-width) !important;
-    min-width: var(--dg-filetree-width) !important;
+    width: var(--dg-panel-left) !important;
+    min-width: var(--dg-panel-left) !important;
     justify-content: flex-start !important;
     z-index: 30;
     height: 100%;
@@ -57,6 +61,16 @@ body {
     .foldername-wrapper {
         font-size: var(--dg-toc-font-size, 1rem) !important;
         line-height: 1.5;
+    }
+
+    // Clicks toggle or open the row; they must not highlight the name as text.
+    .filetree-scroll,
+    .filename,
+    .foldername,
+    .foldername-wrapper,
+    a.notelink {
+        -webkit-user-select: none !important;
+        user-select: none !important;
     }
 
     // Whole highlighted row is the hit target (note = open file, folder = toggle).
@@ -200,8 +214,8 @@ body {
     height: 100% !important;
     left: auto !important;
     right: 0 !important;
-    width: var(--dg-sidebar-max-width);
-    max-width: var(--dg-sidebar-max-width);
+    width: var(--dg-panel-right);
+    max-width: var(--dg-panel-right);
     padding: 10px 0 !important;
     box-sizing: border-box;
     z-index: 30;
@@ -374,6 +388,68 @@ html.right-panel-collapsed .panel-edge-toggle-right .panel-icon-open {
     display: none !important;
 }
 
+// Drag handles on the inner edges of the side menus.
+.panel-resizer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 10px;
+    z-index: 6;
+    cursor: col-resize;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    background: transparent;
+}
+
+.panel-resizer::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: transparent;
+}
+
+.panel-resizer-left {
+    right: 0;
+}
+
+.panel-resizer-left::after {
+    right: 0;
+}
+
+.panel-resizer-right {
+    left: 0;
+}
+
+.panel-resizer-right::after {
+    left: 0;
+}
+
+.panel-resizer:hover::after,
+.panel-resizer:focus-visible::after,
+.panel-resizer.is-dragging::after {
+    background: var(--text-accent, var(--text-muted));
+}
+
+.panel-resizer:focus-visible {
+    outline: none;
+}
+
+html.panel-resizing,
+html.panel-resizing * {
+    cursor: col-resize !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+}
+
+html.panel-resizing .content:not(.canvas-page),
+html.panel-resizing .filetree-wrapper,
+html.panel-resizing .sidebar#page-panel {
+    transition: none !important;
+}
+
 // Desktop: hover = overlay drop over text; click-pin = in-flow (text narrows).
 @media (min-width: 1001px) {
     .filetree-wrapper,
@@ -381,15 +457,15 @@ html.right-panel-collapsed .panel-edge-toggle-right .panel-icon-open {
         position: fixed !important;
         background-color: var(--background-secondary, #1e1e1e);
         transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease, box-shadow 0.15s ease;
-        width: var(--dg-filetree-width) !important;
-        min-width: var(--dg-filetree-width) !important;
-        max-width: var(--dg-filetree-width) !important;
+        width: var(--dg-panel-left) !important;
+        min-width: var(--dg-panel-left) !important;
+        max-width: var(--dg-panel-left) !important;
     }
 
     .sidebar#page-panel {
-        width: var(--dg-sidebar-max-width) !important;
-        min-width: var(--dg-sidebar-max-width) !important;
-        max-width: var(--dg-sidebar-max-width) !important;
+        width: var(--dg-panel-right) !important;
+        min-width: var(--dg-panel-right) !important;
+        max-width: var(--dg-panel-right) !important;
     }
 
     // Keep search fully below the fixed corner toggle.
@@ -477,16 +553,16 @@ html.right-panel-collapsed .panel-edge-toggle-right .panel-icon-open {
     }
 
     html:not(.left-panel-collapsed) .content:not(.canvas-page) {
-        margin-left: calc(var(--dg-filetree-width) + var(--dg-filetree-gap)) !important;
+        margin-left: calc(var(--dg-panel-left) + var(--dg-filetree-gap)) !important;
     }
 
     html:not(.right-panel-collapsed) .content:not(.canvas-page) {
-        margin-right: calc(var(--dg-sidebar-max-width) + var(--dg-sidebar-gap)) !important;
+        margin-right: calc(var(--dg-panel-right) + var(--dg-sidebar-gap)) !important;
     }
 
     @media (max-width: 1400px) {
         html:not(.left-panel-collapsed) .content:not(.canvas-page) {
-            margin-left: calc(var(--dg-filetree-width) + 16px) !important;
+            margin-left: calc(var(--dg-panel-left) + 16px) !important;
         }
 
         html:not(.right-panel-collapsed) .content:not(.canvas-page) {
@@ -564,8 +640,8 @@ html.right-panel-collapsed .panel-edge-toggle-right .panel-icon-open {
         bottom: auto !important;
         left: auto !important;
         right: 0 !important;
-        width: var(--dg-compact-panel-width) !important;
-        max-width: var(--dg-compact-panel-width) !important;
+        width: var(--dg-panel-right) !important;
+        max-width: var(--dg-panel-right) !important;
         min-width: 0 !important;
         height: 100% !important;
         max-height: none !important;
@@ -600,9 +676,9 @@ html.right-panel-collapsed .panel-edge-toggle-right .panel-icon-open {
         position: fixed !important;
         left: 0 !important;
         top: 0 !important;
-        width: var(--dg-compact-panel-width) !important;
+        width: var(--dg-panel-left) !important;
         min-width: 0 !important;
-        max-width: var(--dg-compact-panel-width) !important;
+        max-width: var(--dg-panel-left) !important;
         height: 100% !important;
         justify-content: flex-start !important;
         box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);

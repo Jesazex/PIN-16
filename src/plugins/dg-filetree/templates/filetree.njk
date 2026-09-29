@@ -30,6 +30,7 @@
     <div x-data="{isDesktop: true, showFilesMobile: false}">
 
       <div class="filetree-wrapper" style="display: flex;">
+      <div class="panel-resizer panel-resizer-left" data-panel-resize="left" role="separator" aria-orientation="vertical" aria-label="Изменить ширину списка файлов" tabindex="0"></div>
       <nav class="filetree-sidebar">
         {% for imp in dynamics.filetree.beforeTitle %}
             {% include imp %}
