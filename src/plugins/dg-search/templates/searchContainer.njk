@@ -416,7 +416,7 @@
         }
 
         window.lastSearch = searchQuery;
-        window.searchTerms = tokenizeSearchTerms(searchQuery);
+        window.searchTerms = searchTermsFor(searchQuery);
 
         resultsDiv.innerHTML = loadingSvg;
         hidePreview();
@@ -482,37 +482,60 @@
 
     // ===== Offline Search =====
 
+    function normalizePhrase(str) {
+        return String(str || "")
+            .toLowerCase()
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+    function searchTermsFor(query) {
+        const trimmed = String(query || "").trim();
+        if (trimmed[0] === "#" && trimmed.length > 1) {
+            return tokenizeSearchTerms(trimmed.substring(1));
+        }
+        const phrase = normalizePhrase(trimmed);
+        return phrase ? [phrase] : [];
+    }
+
+    function phraseInText(text, phrase) {
+        return normalizePhrase(text).includes(phrase);
+    }
+
+    // Exact phrase. Heading matches (note title and h1–h6) rank above body matches.
+    // A file that does not contain the phrase is omitted.
     function offlineSearch(searchQuery) {
-        const data = window.docs;
+        const data = window.docs || [];
         const isTagSearch = searchQuery[0] === "#" && searchQuery.length > 1;
 
-        const searchResults = isTagSearch
-            ? index.search(searchQuery.substring(1), [{ field: "tags" }])
-            : index.search(searchQuery, [
-                { field: "title", limit: 5 },
-                { field: "content", limit: 10 }
-            ]);
+        if (isTagSearch) {
+            const searchResults = index.search(searchQuery.substring(1), [{ field: "tags" }]);
+            const tagHit = searchResults.find((x) => x.field === "tags");
+            const ids = tagHit ? tagHit.result : [];
+            return ids.map((id) => {
+                const result = { ...data[id] };
+                result.tags = (result.tags || []).filter((x) => x !== "gardenEntry" && x !== "note");
+                return result;
+            });
+        }
 
-        const getByField = (field) => {
-            const results = searchResults.filter((x) => x.field === field);
-            if (results.length === 0) return [];
-            return [...results[0].result];
-        };
+        const phrase = normalizePhrase(searchQuery);
+        if (!phrase) return [];
 
-        const allIds = new Set([
-            ...getByField("title"),
-            ...getByField("content"),
-            ...getByField("tags")
-        ]);
-
-        const dataIds = [...allIds];
-        const finalResults = dataIds.map((id) => {
-            const result = { ...data[id] };
-            result.tags = result.tags.filter((x) => x !== "gardenEntry" && x !== "note");
-            return result;
+        const headingHits = [];
+        const textHits = [];
+        data.forEach((doc) => {
+            const headings = [doc.title].concat(Array.isArray(doc.headings) ? doc.headings : []);
+            const inHeading = headings.some((heading) => phraseInText(heading, phrase));
+            const inText = phraseInText(doc.content, phrase);
+            if (!inHeading && !inText) return;
+            const result = { ...doc };
+            result.tags = (result.tags || []).filter((x) => x !== "gardenEntry" && x !== "note");
+            if (inHeading) headingHits.push(result);
+            else textHits.push(result);
         });
 
-        return finalResults;
+        return headingHits.concat(textHits);
     }
 
     // Tags rendered by the core (note content, header tags, canvas nodes)
