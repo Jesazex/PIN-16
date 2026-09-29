@@ -13,20 +13,44 @@ module.exports = {
         .trim();
     });
 
-    // Section headings, kept separate so a phrase cannot span two headings.
-    eleventyConfig.addFilter("headingsForSearch", function (content) {
-      if (!content) return [];
-      const found = [];
-      const re = /<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/gi;
-      let match;
-      while ((match = re.exec(String(content))) !== null) {
-        const text = match[1]
+    // One entry per section: heading text plus the body under it, so a match
+    // can scroll to the heading it belongs to. Ids come from the rendered HTML.
+    eleventyConfig.addFilter("sectionsForSearch", function (content) {
+      const html = String(content || "");
+      const strip = (value) =>
+        String(value || "")
           .replace(/<[^>]*>/g, " ")
           .replace(/\s+/g, " ")
           .trim();
-        if (text) found.push(text);
+      const re = /<h([1-6])\b([^>]*)>([\s\S]*?)<\/h\1>/gi;
+      const marks = [];
+      let match;
+      while ((match = re.exec(html)) !== null) {
+        const attrs = match[2] || "";
+        const idMatch = attrs.match(/\bid=["']([^"']+)["']/i);
+        marks.push({
+          start: match.index,
+          end: re.lastIndex,
+          id: idMatch ? idMatch[1] : "",
+          text: strip(match[3]),
+        });
       }
-      return found;
+      if (marks.length === 0) {
+        const body = strip(html);
+        return body ? [{ id: "", text: "", body }] : [];
+      }
+      const sections = [];
+      const preamble = strip(html.slice(0, marks[0].start));
+      if (preamble) sections.push({ id: "", text: "", body: preamble });
+      marks.forEach((mark, index) => {
+        const next = marks[index + 1] ? marks[index + 1].start : html.length;
+        sections.push({
+          id: mark.id,
+          text: mark.text,
+          body: strip(html.slice(mark.end, next)),
+        });
+      });
+      return sections;
     });
 
     eleventyConfig.addFilter("searchableTags", function (str) {

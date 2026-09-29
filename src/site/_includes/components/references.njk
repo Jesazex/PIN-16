@@ -1,16 +1,45 @@
     <script>
-      if (window.location.hash) {
-        document.getElementById(window.location.hash.slice(1)).classList.add('referred');
+      function headingFromHash(hash) {
+        if (!hash) return null;
+        let id = hash.charAt(0) === "#" ? hash.slice(1) : hash;
+        try {
+          id = decodeURIComponent(id);
+        } catch (e) {
+          // keep the raw id
+        }
+        const el = document.getElementById(id);
+        if (!el) return null;
+        if (/^H[1-6]$/.test(el.tagName)) return el;
+        return el.closest("h1, h2, h3, h4, h5, h6") || el;
       }
-      window.addEventListener('hashchange', (evt) => {
+
+      function flashHeading(el) {
+        if (!el) return;
+        el.classList.add("referred");
+        el.scrollIntoView({ block: "start" });
+        el.classList.remove("heading-flash");
+        void el.offsetWidth;
+        el.classList.add("heading-flash");
+        clearTimeout(el._headingFlashTimer);
+        el._headingFlashTimer = setTimeout(function () {
+          el.classList.remove("heading-flash");
+        }, 1000);
+      }
+
+      function focusHashedHeading() {
+        flashHeading(headingFromHash(window.location.hash));
+      }
+
+      if (window.location.hash) {
+        focusHashedHeading();
+      }
+      window.addEventListener("hashchange", function (evt) {
         const oldParts = evt.oldURL.split("#");
         if (oldParts[1]) {
-          document.getElementById(oldParts[1]).classList.remove('referred');
+          const previous = headingFromHash("#" + oldParts[1]);
+          if (previous) previous.classList.remove("referred");
         }
-        const newParts = evt.newURL.split("#");
-        if (newParts[1]) {
-          document.getElementById(newParts[1]).classList.add('referred');
-        }
+        focusHashedHeading();
       }, false);
       const url_parts = window.location.href.split("#")
       const url = url_parts[0];

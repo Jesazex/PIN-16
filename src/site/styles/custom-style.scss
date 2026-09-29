@@ -773,6 +773,29 @@ html.panel-resizing .sidebar#page-panel {
     }
 }
 
+// Brief highlight when a search result or deadline link lands on a heading.
+h1.heading-flash,
+h2.heading-flash,
+h3.heading-flash,
+h4.heading-flash,
+h5.heading-flash,
+h6.heading-flash {
+    animation: dg-heading-flash 1s ease;
+    border-radius: 4px;
+}
+
+@keyframes dg-heading-flash {
+    0%,
+    75% {
+        background-color: color-mix(in srgb, var(--text-accent, #8ab4f8) 42%, transparent);
+        box-shadow: inset 3px 0 0 var(--text-accent, #8ab4f8);
+    }
+    100% {
+        background-color: transparent;
+        box-shadow: inset 3px 0 0 transparent;
+    }
+}
+
 // Netlify / Forestry badge guards (unchanged from prior PR work).
 .forestry-fixed-ui,
 [class*="forestry-fixed"],
