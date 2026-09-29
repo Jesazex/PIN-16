@@ -447,6 +447,7 @@
             const excerpt = getContextualExcerpt(r.content, window.searchTerms, 120);
             const highlightedExcerpt = highlightTerms(excerpt, window.searchTerms);
             const highlightedTitle = highlightTerms(r.title, window.searchTerms);
+            const targetUrl = r.matchId ? `${r.url}#${encodeURIComponent(r.matchId)}` : r.url;
 
             const tagsHTML = r.tags && r.tags.length > 0
                 ? `<div class="result-tags">${r.tags.map(tag => `<span class="tag">#${tag}</span>`).join('')}</div>`
@@ -455,9 +456,9 @@
             resultsHTML += `
                 <div class="searchresult${index === 0 ? ' active' : ''}"
                      data-index="${index}"
-                     data-url="${r.url}"
+                     data-url="${targetUrl}"
                      onmouseenter="showPreview(${index})"
-                     onclick="window.location.href='${r.url}'">
+                     onclick="window.location.href='${targetUrl}'">
                     <span class="result-title">${highlightedTitle}</span>
                     ${tagsHTML}
                     <div class="result-excerpt">${highlightedExcerpt}</div>
@@ -525,17 +526,41 @@
         const headingHits = [];
         const textHits = [];
         data.forEach((doc) => {
-            const headings = [doc.title].concat(Array.isArray(doc.headings) ? doc.headings : []);
-            const inHeading = headings.some((heading) => phraseInText(heading, phrase));
-            const inText = phraseInText(doc.content, phrase);
-            if (!inHeading && !inText) return;
+            const located = locatePhrase(doc, phrase);
+            if (!located) return;
             const result = { ...doc };
             result.tags = (result.tags || []).filter((x) => x !== "gardenEntry" && x !== "note");
-            if (inHeading) headingHits.push(result);
+            result.matchId = located.matchId;
+            if (located.inHeading) headingHits.push(result);
             else textHits.push(result);
         });
 
         return headingHits.concat(textHits);
+    }
+
+    // First place the phrase occurs: the page title, a section heading, or
+    // the heading of the section whose text contains it.
+    function locatePhrase(doc, phrase) {
+        const sections = Array.isArray(doc.sections) ? doc.sections : [];
+        let inHeading = phraseInText(doc.title, phrase);
+        let inText = false;
+        let matchId = inHeading ? "note-title" : "";
+
+        for (const section of sections) {
+            const headingHit = phraseInText(section.text, phrase);
+            const bodyHit = phraseInText(section.body, phrase);
+            if (headingHit) inHeading = true;
+            if (bodyHit) inText = true;
+            if (!matchId && (headingHit || bodyHit)) {
+                matchId = section.id || "note-title";
+            }
+        }
+
+        if (!inHeading && !inText && phraseInText(doc.content, phrase)) {
+            inText = true;
+        }
+        if (!inHeading && !inText) return null;
+        return { inHeading, matchId };
     }
 
     // Tags rendered by the core (note content, header tags, canvas nodes)
