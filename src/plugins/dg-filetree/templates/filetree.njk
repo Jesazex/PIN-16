@@ -10,8 +10,8 @@
                     <span class="filename" data-note-icon="{{fileOrFolder.noteIcon}}">{{fileOrFolder.name}}</span>
                 </a>
             {% elif fileOrFolder.isFolder%}
-                <div class="folder inner-folder" x-data="{isOpen: $persist(false).as({{currentPath | dump}})}">
-                    <div class="foldername-wrapper align-icon" role="button" tabindex="0" @click.stop="isOpen=!isOpen" @keydown.enter.prevent="isOpen=!isOpen" @keydown.space.prevent="isOpen=!isOpen">
+                <div class="folder inner-folder" x-data="{isOpen: $persist(false).as({{currentPath | dump}}), toggleFolder() { this.isOpen = !this.isOpen; if (!this.isOpen && window.dgCollapseNestedFolders) { var folder = (this.$el && this.$el.closest) ? (this.$el.closest('.inner-folder') || this.$el) : this.$el; window.dgCollapseNestedFolders(folder); } }}">
+                    <div class="foldername-wrapper align-icon" role="button" tabindex="0" @click.stop="toggleFolder()" @keydown.enter.prevent="toggleFolder()" @keydown.space.prevent="toggleFolder()">
                     <i x-show="isOpen" style="display: none;"  data-lucide="chevron-down"></i>
                     <i x-show="!isOpen"  data-lucide="chevron-right"></i>
                     <span class="foldername">{{fileOrFolderName}}</span>
@@ -27,6 +27,16 @@
 
     {# Always use the desktop filetree chrome (no stock phone navbar).
        Compact viewports collapse panels via sidebarToggles + CSS. #}
+    <script>
+      window.dgCollapseNestedFolders = function (folderEl) {
+        if (!folderEl || !folderEl.querySelectorAll) return;
+        folderEl.querySelectorAll(".inner-folder").forEach(function (child) {
+          var stack = child._x_dataStack;
+          var data = stack && stack[0];
+          if (data && data.isOpen) data.isOpen = false;
+        });
+      };
+    </script>
     <div x-data="{isDesktop: true, showFilesMobile: false}">
 
       <div class="filetree-wrapper" style="display: flex;">

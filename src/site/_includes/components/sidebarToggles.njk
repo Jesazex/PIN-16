@@ -127,6 +127,7 @@
             }
             hoverPeek[side] = false;
             applyState();
+            applyStoredWidths();
       }
 
       function setHoverPeek(side, on) {
@@ -180,12 +181,100 @@
             }
       }
 
-      function clampPanelWidth(raw) {
+      function countsOpen(side) {
+            const root = document.documentElement;
+            const collapsed = root.classList.contains(side === 'left' ? 'left-panel-collapsed' : 'right-panel-collapsed');
+            if (!collapsed) return true;
+            return root.classList.contains(side === 'left' ? 'left-panel-peek' : 'right-panel-peek');
+      }
+
+      // Article (or the strip not covered by an overlay panel) stays >= 25vw.
+      function layoutExtra() {
+            if (window.innerWidth <= 1000 || !document.body) return 0;
+            const cs = getComputedStyle(document.body);
+            const pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+            const gutter = Math.max(0, window.innerWidth - document.body.clientWidth);
+            return pad + gutter;
+      }
+
+      function centerWidth(leftW, rightW, leftCollapsed, rightCollapsed, vw) {
+            if (vw <= 1000) {
+                  return vw - (leftCollapsed ? 0 : leftW) - (rightCollapsed ? 0 : rightW);
+            }
+            const marginLeft = leftCollapsed ? 48 : leftW + (vw <= 1400 ? 16 : 24);
+            let marginRight;
+            if (rightCollapsed) marginRight = 48;
+            else if (vw <= 1400) marginRight = Math.max(20, rightW);
+            else marginRight = rightW + 24;
+            return vw - marginLeft - marginRight - layoutExtra();
+      }
+
+      function panelLimits() {
+            const vw = window.innerWidth;
+            const cap = Math.min(640, Math.max(180, Math.floor(vw * 0.85)));
+            const min = Math.min(180, cap);
+            return { vw, cap, min, floor: vw * 0.25 };
+      }
+
+      function layoutWidth(side) {
+            if (!countsOpen(side)) return 0;
+            const panel = panelEl(side);
+            if (panel) {
+                  const w = Math.round(panel.getBoundingClientRect().width);
+                  if (w >= 100) return w;
+            }
+            const prop = side === 'left' ? '--dg-panel-left-width' : '--dg-panel-right-width';
+            const css = parseInt(getComputedStyle(document.documentElement).getPropertyValue(prop), 10);
+            if (css) return css;
+            if (window.innerWidth <= 1000) return Math.min(250, Math.floor(window.innerWidth * 0.85));
+            return side === 'left' ? 250 : 350;
+      }
+
+      function clampPanelWidth(side, raw) {
             const n = parseInt(raw, 10);
             if (!n || n !== n) return 0;
-            const max = Math.min(640, Math.max(180, Math.floor(window.innerWidth * 0.85)));
-            const min = Math.min(180, max);
-            return Math.max(min, Math.min(max, n));
+            const lim = panelLimits();
+            const other = side === 'left' ? 'right' : 'left';
+            const otherW = layoutWidth(other);
+            const hi = Math.min(lim.cap, Math.max(lim.min, n));
+            const centerAt = (width) => {
+                  const leftW = side === 'left' ? width : otherW;
+                  const rightW = side === 'right' ? width : otherW;
+                  const leftCollapsed = side === 'left' ? false : !countsOpen('left');
+                  const rightCollapsed = side === 'right' ? false : !countsOpen('right');
+                  return centerWidth(leftW, rightW, leftCollapsed, rightCollapsed, lim.vw);
+            };
+            if (centerAt(hi) >= lim.floor) return Math.max(lim.min, Math.min(lim.cap, n));
+            if (centerAt(lim.min) < lim.floor) return lim.min;
+            let low = lim.min;
+            let high = hi;
+            let best = lim.min;
+            while (low <= high) {
+                  const mid = Math.floor((low + high) / 2);
+                  if (centerAt(mid) >= lim.floor) {
+                        best = mid;
+                        low = mid + 1;
+                  } else {
+                        high = mid - 1;
+                  }
+            }
+            return best;
+      }
+
+      function fitStoredPair(left, right) {
+            const lim = panelLimits();
+            const leftOpen = countsOpen('left');
+            const rightOpen = countsOpen('right');
+            let guard = 0;
+            while (centerWidth(left, right, !leftOpen, !rightOpen, lim.vw) < lim.floor && guard < 4000) {
+                  const canLeft = leftOpen && left > lim.min;
+                  const canRight = rightOpen && right > lim.min;
+                  if (!canLeft && !canRight) break;
+                  if (canLeft && (!canRight || left >= right)) left -= 1;
+                  else right -= 1;
+                  guard += 1;
+            }
+            return { left, right };
       }
 
       function widthKey(side) {
@@ -197,7 +286,7 @@
       }
 
       function setPanelWidth(side, px, persist) {
-            const value = clampPanelWidth(px);
+            const value = clampPanelWidth(side, px);
             if (!value) return;
             document.documentElement.style.setProperty(widthProp(side), value + 'px');
             const handle = document.querySelector(`[data-panel-resize="${side}"]`);
@@ -212,8 +301,16 @@
 
       function applyStoredWidths() {
             try {
-                  const left = localStorage.getItem(LEFT_WIDTH_KEY);
-                  const right = localStorage.getItem(RIGHT_WIDTH_KEY);
+                  const lim = panelLimits();
+                  let left = parseInt(localStorage.getItem(LEFT_WIDTH_KEY), 10) || 0;
+                  let right = parseInt(localStorage.getItem(RIGHT_WIDTH_KEY), 10) || 0;
+                  if (left) left = Math.max(lim.min, Math.min(lim.cap, left));
+                  if (right) right = Math.max(lim.min, Math.min(lim.cap, right));
+                  if (left || right) {
+                        const fitted = fitStoredPair(left || 250, right || 350);
+                        if (left) left = countsOpen('left') ? fitted.left : left;
+                        if (right) right = countsOpen('right') ? fitted.right : right;
+                  }
                   if (left) setPanelWidth('left', left, false);
                   if (right) setPanelWidth('right', right, false);
             } catch {
