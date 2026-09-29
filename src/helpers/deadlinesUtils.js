@@ -20,24 +20,8 @@ const MONTHS = {
 
 const FEMININE_TYPES = new Set(["КР", "ЛР"]);
 
-/** 
- * Кроссплатформенный перевод даты в полночь по Московскому времени (MSK, UTC+3).
- * Работает через математический сдвиг таймстампа, что исключает ошибки парсинга на серверах GitHub.
- */
-function startOfMoscowDay(date) {
-  // Получаем чистый UTC-таймстамп в миллисекундах
-  const utcTimestamp = date.getTime() + (date.getTimezoneOffset() * 60000);
-  // Добавляем ровно 3 часа (Московский сдвиг UTC+3)
-  const mskTimestamp = utcTimestamp + (3 * 3600000);
-  const mskDate = new Date(mskTimestamp);
-  
-  // Возвращаем объект локальной даты, сброшенный на полночь
-  return new Date(mskDate.getFullYear(), mskDate.getMonth(), mskDate.getDate());
-}
-
-/** Сохраняем оригинальное имя функции для совместимости с Eleventy/Obsidian */
 function startOfDay(date) {
-  return startOfMoscowDay(date);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 function parseDateHeading(heading) {
@@ -55,29 +39,20 @@ function parseDateHeading(heading) {
   };
 }
 
-/** Вычисляет предстоящую дату с учетом московского года */
+/** Resolve calendar date: current year, or next year if already before today. */
 function resolveUpcomingDate(day, month, today = new Date()) {
-  const today0 = startOfMoscowDay(today);
-  
-  // Создаем дату-кандидата в локальном контексте
+  const today0 = startOfDay(today);
   let candidate = new Date(today0.getFullYear(), month, day);
-  
   if (candidate < today0) {
     candidate = new Date(today0.getFullYear() + 1, month, day);
   }
   return candidate;
 }
 
-/** Безопасно считает разницу в днях */
 function daysUntil(target, today = new Date()) {
-  const mskToday = startOfMoscowDay(today);
-  const mskTarget = startOfMoscowDay(target);
-  
-  // Переводим полночи в UTC таймстампы для исключения влияния часовых поясов сервера
-  const a = Date.UTC(mskToday.getFullYear(), mskToday.getMonth(), mskToday.getDate());
-  const b = Date.UTC(mskTarget.getFullYear(), mskTarget.getMonth(), mskTarget.getDate());
-  
-  return Math.floor((b - a) / 86400000);
+  const a = startOfDay(today).getTime();
+  const b = startOfDay(target).getTime();
+  return Math.round((b - a) / 86400000);
 }
 
 function relativeSuffix(days) {
@@ -136,7 +111,8 @@ function notePathParts(item) {
 }
 
 /**
- * Основная функция сбора дедлайнов.
+ * Build upcoming-deadline lines from notes under "Формы контроля".
+ * Returns [] when that folder is absent.
  */
 function getControlDeadlines(data, today = new Date()) {
   const notes = (data.collections && data.collections.note) || [];
