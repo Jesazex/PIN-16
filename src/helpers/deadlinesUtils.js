@@ -20,13 +20,27 @@ const MONTHS = {
 
 const FEMININE_TYPES = new Set(["КР", "ЛР"]);
 
+/** 
+ * Нормализует любую дату, переводя её в полночь по Московскому времени (MSK).
+ * Это гарантирует корректную работу кода на зарубежных серверах.
+ */
+function startOfMoscowDay(date) {
+  // Переводим системное время в строковое представление по часовому поясу Москвы
+  const mskString = date.toLocaleString("en-US", { timeZone: "Europe/Moscow" });
+  const mskDate = new Date(mskString);
+  
+  // Возвращаем дату, сброшенную на локальную полночь
+  return new Date(mskDate.getFullYear(), mskDate.getMonth(), mskDate.getDate());
+}
+
+/** Сохраняем оригинальное имя функции для совместимости с остальным кодом */
 function startOfDay(date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return startOfMoscowDay(date);
 }
 
 function parseDateHeading(heading) {
   if (!heading || typeof heading !== "string") return null;
-  const match = heading.trim().match(/^На\s+(\d{1,2})\s+([А-Яа-яёЁ]+)\s*$/i);
+  const match = heading.trim().match(/^На\s+(\d{1,2})\s+([А-Яа-яёЁ]+)\s*\$/i);
   if (!match) return null;
   const day = parseInt(match[1], 10);
   const monthToken = match[2].toLowerCase();
@@ -39,20 +53,30 @@ function parseDateHeading(heading) {
   };
 }
 
-/** Resolve calendar date: current year, or next year if already before today. */
+/** Вычисляет предстоящую дату с учетом года в московском часовом поясе */
 function resolveUpcomingDate(day, month, today = new Date()) {
-  const today0 = startOfDay(today);
+  const today0 = startOfMoscowDay(today);
+  
+  // Создаем дату-кандидата, используя текущий год в Москве
   let candidate = new Date(today0.getFullYear(), month, day);
+  
   if (candidate < today0) {
     candidate = new Date(today0.getFullYear() + 1, month, day);
   }
   return candidate;
 }
 
+/** Безопасно считает разницу в календарных днях без влияния часовых поясов и перевода часов */
 function daysUntil(target, today = new Date()) {
-  const a = startOfDay(today).getTime();
-  const b = startOfDay(target).getTime();
-  return Math.round((b - a) / 86400000);
+  const mskToday = startOfMoscowDay(today);
+  const mskTarget = startOfMoscowDay(target);
+  
+  // Конвертируем московские полночи в чистый UTC-таймстамп для точного вычитания
+  const a = Date.UTC(mskToday.getFullYear(), mskToday.getMonth(), mskToday.getDate());
+  const b = Date.UTC(mskTarget.getFullYear(), mskTarget.getMonth(), mskTarget.getDate());
+  
+  // Вычисляем чистую разницу в днях
+  return Math.floor((b - a) / 86400000);
 }
 
 function relativeSuffix(days) {
@@ -71,14 +95,14 @@ function relativeSuffix(days) {
 function nearestAdjective(typeName) {
   if (FEMININE_TYPES.has(typeName)) return "Ближайшая";
   const lower = String(typeName || "").toLowerCase();
-  if (/[ая]я$/i.test(lower)) return "Ближайшая";
+  if (/[ая]я\$/i.test(lower)) return "Ближайшая";
   return "Ближайшее";
 }
 
 function extractHeadings(markdown) {
   if (!markdown) return [];
   const headings = [];
-  const re = /^(#{1,6})\s+(.+?)\s*$/gm;
+  const re = /^(#{1,6})\s+(.+?)\s*\$/gm;
   let m;
   while ((m = re.exec(markdown)) !== null) {
     headings.push(m[2].trim());
@@ -111,8 +135,7 @@ function notePathParts(item) {
 }
 
 /**
- * Build upcoming-deadline lines from notes under "Формы контроля".
- * Returns [] when that folder is absent.
+ * Собирает строки ближайших дедлайнов из заметок в папке "Формы контроля".
  */
 function getControlDeadlines(data, today = new Date()) {
   const notes = (data.collections && data.collections.note) || [];
