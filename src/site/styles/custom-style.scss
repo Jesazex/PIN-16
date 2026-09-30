@@ -328,7 +328,7 @@ body {
 
 main.content > hr.dg-deadline-divider {
     border: 0;
-    border-top: 1px solid var(--background-modifier-border, rgba(200, 200, 200, 0.45));
+    border-top: 1px solid color-mix(in srgb, var(--text-muted, #c8c8c8) 70%, transparent);
     margin: 1.5em 0;
     height: 0;
     width: 100%;
