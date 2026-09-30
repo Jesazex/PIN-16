@@ -55,6 +55,25 @@
         }
     }
 
+    window.openSiteSearch = function () {
+        const searchContainer = document.getElementById('globalsearch');
+        const field = document.getElementById('term');
+        if (!searchContainer || !field) return;
+        if (!searchContainer.classList.contains('active')) {
+            searchContainer.classList.add('active');
+        }
+        field.focus();
+        field.select();
+    }
+
+    document.addEventListener('keydown', function (event) {
+        if (event.altKey || event.shiftKey) return;
+        if (!(event.ctrlKey || event.metaKey)) return;
+        if (event.key !== 'f' && event.key !== 'F') return;
+        event.preventDefault();
+        window.openSiteSearch();
+    }, true);
+
     window.toggleTagSearch = function (evt) {
         const term = evt.textContent;
         if (term) {
