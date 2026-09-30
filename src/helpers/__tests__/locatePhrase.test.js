@@ -93,3 +93,60 @@ describe("locatePhrase", () => {
     ).toBeNull();
   });
 });
+
+describe("keyboard layout search", () => {
+  const docs = [
+    {
+      title: "Оценка",
+      url: "/error",
+      content: "оценка погрешности измерения",
+      sections: [{ id: "err", text: "Погрешность", body: "оценка погрешности измерения" }],
+      tags: ["note"],
+    },
+    {
+      title: "Латиница",
+      url: "/latin",
+      content: "строка gjuhtiyjcnm в тексте",
+      sections: [{ id: "lat", text: "Заметка", body: "строка gjuhtiyjcnm в тексте" }],
+      tags: [],
+    },
+    {
+      title: "Другое",
+      url: "/other",
+      content: "ничего похожего",
+      sections: [{ id: "x", text: "Другое", body: "ничего похожего" }],
+      tags: [],
+    },
+  ];
+
+  it("maps a query typed in the other layout", () => {
+    expect(sandbox.swapLayout("gjuhtiyjcnm")).toBe("погрешность");
+    expect(sandbox.swapLayout("Погрешность")).toBe("Gjuhtiyjcnm");
+    expect(sandbox.phraseVariants("gjuhtiyjcnm")).toEqual(["gjuhtiyjcnm", "погрешность"]);
+  });
+
+  it("lists matches in the typed layout before the swapped layout", () => {
+    sandbox.window = { docs };
+    const typedLatin = sandbox.offlineSearch("gjuhtiyjcnm").map((doc) => doc.url);
+    expect(typedLatin).toEqual(["/latin", "/error"]);
+
+    const typedRussian = sandbox.offlineSearch("погрешность").map((doc) => doc.url);
+    expect(typedRussian).toEqual(["/error", "/latin"]);
+    expect(sandbox.offlineSearch("погрешность")[0].matchId).toBe("err");
+  });
+
+  it("keeps a file that matches both layouts once, in the typed group", () => {
+    sandbox.window = {
+      docs: [
+        {
+          title: "Оба",
+          url: "/both",
+          content: "погрешность и gjuhtiyjcnm",
+          sections: [{ id: "both", text: "Оба", body: "погрешность и gjuhtiyjcnm" }],
+          tags: [],
+        },
+      ],
+    };
+    expect(sandbox.offlineSearch("gjuhtiyjcnm")).toHaveLength(1);
+  });
+});
