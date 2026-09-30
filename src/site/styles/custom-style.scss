@@ -309,25 +309,12 @@ body {
     vertical-align: top;
     text-align: left;
     white-space: nowrap;
+    background: var(--background-primary, #1e232f);
 }
 
-.deadline-table-scroll thead th {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: var(--background-secondary, var(--background-primary, #262626));
-}
-
-.deadline-table-scroll thead th:first-child {
-    left: 0;
-    z-index: 3;
-}
-
+.deadline-table-scroll thead th,
 .deadline-table-scroll tbody th {
-    position: sticky;
-    left: 0;
-    z-index: 1;
-    background: var(--background-secondary, var(--background-primary, #262626));
+    background: var(--background-secondary, #262626);
 }
 
 .deadline-table-scroll td .deadline-subject {
