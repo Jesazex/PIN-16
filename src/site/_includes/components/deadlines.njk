@@ -5,9 +5,15 @@
   {%- for line in deadlines -%}
   <div class="deadline-line">
     <span class="deadline-label">{{ line.label }}</span>
-    <a class="deadline-link" href="{{ line.href }}">{{ line.linkText }}</a>
+    <span class="deadline-detail">
+      {%- for subject in line.subjects -%}
+      <a class="deadline-subject" href="{{ subject.href }}">{{ subject.subjectName }}</a>{%- if not loop.last -%}, {% endif %}
+      {%- endfor -%}
+      <span class="deadline-when"> - {{ line.whenText }}</span>
+    </span>
   </div>
   {%- endfor -%}
+  <button type="button" class="deadline-table-open">Таблица дедлайнов</button>
 </div>
 <script>
 (function () {
@@ -17,28 +23,141 @@
     var script = document.currentScript;
     block = script && script.previousElementSibling;
   }
-  if (!block) return;
-  try {
-    var lines = dgDeadlinesApi.pickControlDeadlines({{ userComputed.controlDeadlineCandidatesJson | safe }});
-    var rows = [];
-    for (var i = 0; i < lines.length; i++) {
-      var line = lines[i];
-      var row = document.createElement("div");
-      row.className = "deadline-line";
-      var label = document.createElement("span");
-      label.className = "deadline-label";
-      label.textContent = line.label;
-      var link = document.createElement("a");
-      link.className = "deadline-link";
-      link.href = line.href;
-      link.textContent = line.linkText;
-      row.appendChild(label);
-      row.appendChild(link);
-      rows.push(row);
+  if (!block || typeof dgDeadlinesApi === "undefined") return;
+
+  function subjectLink(subject) {
+    var link = document.createElement("a");
+    link.className = "deadline-subject";
+    link.href = subject.href;
+    link.textContent = subject.subjectName;
+    return link;
+  }
+
+  function renderLine(line) {
+    var row = document.createElement("div");
+    row.className = "deadline-line";
+    var label = document.createElement("span");
+    label.className = "deadline-label";
+    label.textContent = line.label;
+    var detail = document.createElement("span");
+    detail.className = "deadline-detail";
+    var subjects = line.subjects || [];
+    for (var i = 0; i < subjects.length; i++) {
+      if (i > 0) detail.appendChild(document.createTextNode(", "));
+      detail.appendChild(subjectLink(subjects[i]));
     }
+    var when = document.createElement("span");
+    when.className = "deadline-when";
+    when.textContent = " - " + (line.whenText || "");
+    detail.appendChild(when);
+    row.appendChild(label);
+    row.appendChild(detail);
+    return row;
+  }
+
+  function renderTable(table) {
+    var columns = table.columns || [];
+    var rows = table.rows || [];
+    var tableEl = document.createElement("table");
+    var head = document.createElement("thead");
+    var headRow = document.createElement("tr");
+    var corner = document.createElement("th");
+    corner.scope = "col";
+    headRow.appendChild(corner);
+    for (var c = 0; c < columns.length; c++) {
+      var th = document.createElement("th");
+      th.scope = "col";
+      th.textContent = columns[c];
+      headRow.appendChild(th);
+    }
+    head.appendChild(headRow);
+    tableEl.appendChild(head);
+    var body = document.createElement("tbody");
+    for (var r = 0; r < rows.length; r++) {
+      var tr = document.createElement("tr");
+      var dateCell = document.createElement("th");
+      dateCell.scope = "row";
+      dateCell.textContent = rows[r].label;
+      tr.appendChild(dateCell);
+      for (var k = 0; k < columns.length; k++) {
+        var td = document.createElement("td");
+        var items = (rows[r].cells && rows[r].cells[columns[k]]) || [];
+        for (var s = 0; s < items.length; s++) td.appendChild(subjectLink(items[s]));
+        tr.appendChild(td);
+      }
+      body.appendChild(tr);
+    }
+    tableEl.appendChild(body);
+    return tableEl;
+  }
+
+  function closeTable() {
+    var overlay = document.getElementById("dg-deadline-table");
+    if (overlay) overlay.remove();
+    document.removeEventListener("keydown", onTableKey);
+  }
+
+  function onTableKey(event) {
+    if (event.key === "Escape") closeTable();
+  }
+
+  function openTable(table) {
+    closeTable();
+    var overlay = document.createElement("div");
+    overlay.id = "dg-deadline-table";
+    overlay.className = "deadline-table-overlay";
+    var panel = document.createElement("div");
+    panel.className = "deadline-table-panel";
+    panel.setAttribute("role", "dialog");
+    panel.setAttribute("aria-label", "Таблица дедлайнов");
+    var header = document.createElement("div");
+    header.className = "deadline-table-header";
+    var title = document.createElement("span");
+    title.textContent = "Таблица дедлайнов";
+    var close = document.createElement("button");
+    close.type = "button";
+    close.className = "deadline-table-close";
+    close.setAttribute("aria-label", "Закрыть");
+    close.textContent = "×";
+    close.addEventListener("click", closeTable);
+    header.appendChild(title);
+    header.appendChild(close);
+    var scroll = document.createElement("div");
+    scroll.className = "deadline-table-scroll";
+    if (!table.rows || !table.rows.length) {
+      var empty = document.createElement("p");
+      empty.className = "deadline-table-empty";
+      empty.textContent = "Нет предстоящих дат";
+      scroll.appendChild(empty);
+    } else {
+      scroll.appendChild(renderTable(table));
+    }
+    panel.appendChild(header);
+    panel.appendChild(scroll);
+    overlay.appendChild(panel);
+    overlay.addEventListener("click", function (event) {
+      if (event.target === overlay) closeTable();
+    });
+    document.body.appendChild(overlay);
+    document.addEventListener("keydown", onTableKey);
+    close.focus();
+  }
+
+  try {
+    var candidates = {{ userComputed.controlDeadlineCandidatesJson | safe }};
+    var lines = dgDeadlinesApi.pickControlDeadlines(candidates);
+    var table = dgDeadlinesApi.buildDeadlineTable(candidates);
+    var rows = [];
+    for (var i = 0; i < lines.length; i++) rows.push(renderLine(lines[i]));
     if (rows.length) {
       block.textContent = "";
       for (var j = 0; j < rows.length; j++) block.appendChild(rows[j]);
+      var opener = document.createElement("button");
+      opener.type = "button";
+      opener.className = "deadline-table-open";
+      opener.textContent = "Таблица дедлайнов";
+      opener.addEventListener("click", function () { openTable(table); });
+      block.appendChild(opener);
     }
   } catch (err) {}
   block.style.visibility = "visible";

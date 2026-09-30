@@ -11,6 +11,7 @@ import {
   nearestAdjective,
   isPastControlDate,
   markPastControlSections,
+  buildDeadlineTable,
   moscowToday,
   extractHeadings,
   getControlDeadlines,
@@ -90,9 +91,13 @@ describe("deadlinesUtils", () => {
     const todayHeading = el("H2", "На 30 Сентября");
     const todayBody = el("UL", "занятие");
     const futureHeading = el("H2", "На 1 Октября");
+    const children = [header, pastHeading, pastBody, todayHeading, todayBody, futureHeading];
     markPastControlSections(
       {
-        children: [header, pastHeading, pastBody, todayHeading, todayBody, futureHeading],
+        children,
+        insertBefore(node, ref) {
+          children.splice(children.indexOf(ref), 0, node);
+        },
       },
       new Date(2026, 8, 30)
     );
@@ -102,6 +107,8 @@ describe("deadlinesUtils", () => {
     expect(todayHeading.classList.contains("dg-past-deadline")).toBe(false);
     expect(todayBody.classList.contains("dg-past-deadline")).toBe(false);
     expect(futureHeading.classList.contains("dg-past-deadline")).toBe(false);
+    expect(children[3].className).toBe("dg-deadline-divider");
+    expect(children[4]).toBe(todayHeading);
   });
 
   it("extracts markdown headings without a trailing dollar", () => {
@@ -145,7 +152,9 @@ describe("deadlinesUtils", () => {
     );
     expect(lines).toHaveLength(1);
     expect(lines[0].label).toBe("Ближайшее ДЗ:");
-    expect(lines[0].linkText).toBe("1 октября - Физика (2 дня)");
+    expect(lines[0].linkText).toBe("Физика - через 2 дня");
+    expect(lines[0].whenText).toBe("через 2 дня");
+    expect(lines[0].subjects.map((item) => item.subjectName)).toEqual(["Физика"]);
     expect(lines[0].days).toBe(2);
     expect(lines[0].href).toContain("#");
   });
@@ -176,12 +185,41 @@ describe("deadlinesUtils", () => {
     const candidates = getControlDeadlineCandidates(data);
 
     expect(candidates.some((item) => "days" in item)).toBe(false);
-    expect(getControlDeadlines(data, september29)[0].linkText).toBe(
-      "30 сентября - Матан (1 день)"
+    expect(getControlDeadlines(data, september29)[0].linkText).toBe("Матан - через 1 день");
+    expect(pickControlDeadlines(candidates, october1)[0].linkText).toBe("Физика - Сегодня");
+  });
+
+  it("lists every subject that shares the nearest day", () => {
+    const today = new Date(2026, 8, 30);
+    const lines = pickControlDeadlines(
+      [
+        { typeName: "ДЗ", subjectName: "Физика", day: 3, month: 9, displayDate: "3 октября", href: "/fizika#a" },
+        { typeName: "ДЗ", subjectName: "Информатика", day: 3, month: 9, displayDate: "3 октября", href: "/infa#a" },
+        { typeName: "ДЗ", subjectName: "Матан", day: 5, month: 9, displayDate: "5 октября", href: "/matan#a" },
+      ],
+      today
     );
-    expect(pickControlDeadlines(candidates, october1)[0].linkText).toBe(
-      "1 октября - Физика (Сегодня)"
+    expect(lines[0].linkText).toBe("Информатика, Физика - через 3 дня");
+    expect(lines[0].subjects.map((item) => item.href)).toEqual(["/infa#a", "/fizika#a"]);
+  });
+
+  it("builds a table from today through the last recorded date, with ДЗ first", () => {
+    const today = new Date(2026, 8, 30);
+    const table = buildDeadlineTable(
+      [
+        { typeName: "ЛР", subjectName: "Физика", day: 16, month: 8, displayDate: "16 сентября", href: "/lr#past" },
+        { typeName: "ДЗ", subjectName: "Матан", day: 30, month: 8, displayDate: "30 сентября", href: "/dz-matan#today" },
+        { typeName: "ДЗ", subjectName: "Физика", day: 1, month: 9, displayDate: "1 октября", href: "/dz-fiz#oct" },
+        { typeName: "ЛР", subjectName: "Информатика", day: 1, month: 9, displayDate: "1 октября", href: "/lr-infa#oct" },
+        { typeName: "БДЗ", subjectName: "Физика", day: 18, month: 11, displayDate: "18 декабря", href: "/bdz#dec" },
+      ],
+      today
     );
+    expect(table.columns).toEqual(["ДЗ", "БДЗ", "ЛР"]);
+    expect(table.rows.map((row) => row.label)).toEqual(["30 сентября", "1 октября", "18 декабря"]);
+    expect(table.rows[1].cells["ДЗ"].map((item) => item.subjectName)).toEqual(["Физика"]);
+    expect(table.rows[1].cells["ЛР"][0].href).toBe("/lr-infa#oct");
+    expect(table.rows[0].cells["ЛР"]).toEqual([]);
   });
 
   it("runs the inlined browser bundle without Node globals", () => {
@@ -194,7 +232,7 @@ describe("deadlinesUtils", () => {
       [{ typeName: "ЛР", subjectName: "Физика", day: 1, month: 9, displayDate: "1 октября", href: "/#x" }],
       today
     );
-    expect(lines[0].linkText).toBe("1 октября - Физика (Сегодня)");
+    expect(lines[0].linkText).toBe("Физика - Сегодня");
     expect(sandbox.module).toBeUndefined();
   });
 });

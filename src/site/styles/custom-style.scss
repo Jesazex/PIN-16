@@ -195,17 +195,143 @@ body {
     white-space: nowrap;
 }
 
-.deadline-link {
-    display: inline-block;
+.deadline-detail {
+    display: inline;
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+}
+
+.deadline-subject {
     color: var(--text-muted);
     text-decoration: none;
-    overflow-wrap: anywhere;
 
     &:hover,
     &:focus-visible {
         color: var(--text-accent, var(--text-normal));
         text-decoration: underline;
     }
+}
+
+.deadline-when {
+    color: var(--text-muted);
+}
+
+.deadline-table-open {
+    display: inline-block;
+    margin-top: 0.35em;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--text-muted);
+    font: inherit;
+    cursor: pointer;
+    text-align: left;
+
+    &:hover,
+    &:focus-visible {
+        color: var(--text-accent, var(--text-normal));
+        text-decoration: underline;
+    }
+}
+
+.deadline-table-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.deadline-table-panel {
+    display: flex;
+    flex-direction: column;
+    width: min(960px, 100%);
+    max-height: min(85vh, 100%);
+    background: var(--background-primary, #202020);
+    color: var(--text-normal);
+    border: 1px solid var(--background-modifier-border, rgba(128, 128, 128, 0.45));
+    border-radius: 8px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.deadline-table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--background-modifier-border, rgba(128, 128, 128, 0.35));
+}
+
+.deadline-table-close {
+    border: 0;
+    background: none;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+
+    &:hover,
+    &:focus-visible {
+        color: var(--text-normal);
+    }
+}
+
+.deadline-table-scroll {
+    overflow: auto;
+    max-height: calc(85vh - 56px);
+    padding: 8px;
+}
+
+.deadline-table-empty {
+    margin: 12px;
+    color: var(--text-muted);
+}
+
+.deadline-table-scroll table {
+    border-collapse: collapse;
+    width: max-content;
+    min-width: 100%;
+}
+
+.deadline-table-scroll th,
+.deadline-table-scroll td {
+    border: 1px solid var(--background-modifier-border, rgba(128, 128, 128, 0.35));
+    padding: 8px 10px;
+    vertical-align: top;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.deadline-table-scroll thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--background-primary, #202020);
+}
+
+.deadline-table-scroll tbody th {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--background-secondary, var(--background-primary, #262626));
+}
+
+.deadline-table-scroll td .deadline-subject {
+    display: block;
+}
+
+main.content > hr.dg-deadline-divider {
+    border: 0;
+    border-top: 1px solid var(--background-modifier-border, rgba(200, 200, 200, 0.45));
+    margin: 1.5em 0;
+    height: 0;
+    width: 100%;
 }
 
 // Right headings list flush to the right edge of the viewport.

@@ -6,10 +6,12 @@ const {
   resolveUpcomingDate,
   daysUntil,
   relativeSuffix,
+  relativePhrase,
   nearestAdjective,
   isPastControlDate,
   markPastControlSections,
   pickControlDeadlines,
+  buildDeadlineTable,
 } = require("./deadlinesCore");
 
 const ROOT_FOLDER = "Формы контроля";
@@ -99,9 +101,11 @@ module.exports = {
   resolveUpcomingDate,
   daysUntil,
   relativeSuffix,
+  relativePhrase,
   nearestAdjective,
   isPastControlDate,
   markPastControlSections,
+  buildDeadlineTable,
   extractHeadings,
   pickControlDeadlines,
   getControlDeadlineCandidates,
