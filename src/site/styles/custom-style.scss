@@ -797,6 +797,22 @@ html.panel-resizing .sidebar#page-panel {
     }
 }
 
+// Passed dates in «Формы контроля»: the heading and the text under it
+// are only a little darker than the rest of the note.
+main.content > .dg-past-deadline {
+    color: color-mix(in srgb, var(--text-normal) 84%, var(--background-primary));
+}
+
+@for $level from 1 through 6 {
+    main.content > h#{$level}.dg-past-deadline {
+        color: color-mix(in srgb, var(--h#{$level}-color, var(--text-normal)) 84%, var(--background-primary));
+    }
+}
+
+main.content > .dg-past-deadline a {
+    color: color-mix(in srgb, var(--link-external-color, var(--text-accent, var(--text-normal))) 84%, var(--background-primary));
+}
+
 // Brief highlight when a search result or deadline link lands on a heading.
 h1.heading-flash,
 h2.heading-flash,

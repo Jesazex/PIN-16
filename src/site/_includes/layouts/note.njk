@@ -68,6 +68,15 @@ permalink: "notes/{{ page.fileSlug | slugify }}/"
         {% include imp %}
       {% endfor %}
     </main>
+    {% if "Формы контроля" in (page.inputPath or "") %}
+    <script>
+    (function () {
+      {{ userComputed.deadlinesClientSource | safe }}
+      if (!dgDeadlinesApi.markPastControlSections) return;
+      dgDeadlinesApi.markPastControlSections(document.querySelector("main.content"));
+    })();
+    </script>
+    {% endif %}
 
     {# In-page headings outline (TOC) is shown in the right sidebar. #}
     {% if settings.dgShowToc === true or settings.dgShowBacklinks === true or settings.dgShowLocalGraph === true or dynamics.sidebar.top.length > 0 or dynamics.sidebar.bottom.length > 0 or plugins.slots["sidebar.top"] or plugins.slots["sidebar.bottom"] %}

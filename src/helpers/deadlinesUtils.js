@@ -7,6 +7,8 @@ const {
   daysUntil,
   relativeSuffix,
   nearestAdjective,
+  isPastControlDate,
+  markPastControlSections,
   pickControlDeadlines,
 } = require("./deadlinesCore");
 
@@ -98,6 +100,8 @@ module.exports = {
   daysUntil,
   relativeSuffix,
   nearestAdjective,
+  isPastControlDate,
+  markPastControlSections,
   extractHeadings,
   pickControlDeadlines,
   getControlDeadlineCandidates,
