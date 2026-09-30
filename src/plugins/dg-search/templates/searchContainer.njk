@@ -503,8 +503,8 @@
         return normalizePhrase(text).includes(phrase);
     }
 
-    // Exact phrase. Heading matches (note title and h1–h6) rank above body matches.
-    // A file that does not contain the phrase is omitted.
+    // Exact phrase. A heading inside the note ranks above body-only matches.
+    // The file name is not a heading. A file without the phrase is omitted.
     function offlineSearch(searchQuery) {
         const data = window.docs || [];
         const isTagSearch = searchQuery[0] === "#" && searchQuery.length > 1;
@@ -538,29 +538,37 @@
         return headingHits.concat(textHits);
     }
 
-    // First place the phrase occurs: the page title, a section heading, or
-    // the heading of the section whose text contains it.
+    // Scroll target is a heading inside the note, never the file name.
+    // If any heading title contains the phrase, open that heading — even when
+    // the phrase also occurs in the body. If it occurs only in the body, open
+    // the heading of the section that contains it.
     function locatePhrase(doc, phrase) {
         const sections = Array.isArray(doc.sections) ? doc.sections : [];
-        let inHeading = phraseInText(doc.title, phrase);
+        let headingId = "";
+        let textId = "";
+        let inHeading = false;
         let inText = false;
-        let matchId = inHeading ? "note-title" : "";
 
         for (const section of sections) {
+            const id = section.id && section.id !== "note-title" ? section.id : "";
             const headingHit = phraseInText(section.text, phrase);
             const bodyHit = phraseInText(section.body, phrase);
-            if (headingHit) inHeading = true;
-            if (bodyHit) inText = true;
-            if (!matchId && (headingHit || bodyHit)) {
-                matchId = section.id || "note-title";
+            if (headingHit) {
+                inHeading = true;
+                if (!headingId && id) headingId = id;
+            }
+            if (bodyHit) {
+                inText = true;
+                if (!textId && id) textId = id;
             }
         }
 
-        if (!inHeading && !inText && phraseInText(doc.content, phrase)) {
+        const titleHit = phraseInText(doc.title, phrase);
+        if (!inHeading && !inText && (titleHit || phraseInText(doc.content, phrase))) {
             inText = true;
         }
         if (!inHeading && !inText) return null;
-        return { inHeading, matchId };
+        return { inHeading, matchId: headingId || textId || "" };
     }
 
     // Tags rendered by the core (note content, header tags, canvas nodes)
