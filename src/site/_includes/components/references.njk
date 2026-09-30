@@ -13,10 +13,33 @@
         return el.closest("h1, h2, h3, h4, h5, h6") || el;
       }
 
+      function ensureScrollRoom(el) {
+        var spacer = document.getElementById("dg-hash-spacer");
+        if (!spacer) {
+          spacer = document.createElement("div");
+          spacer.id = "dg-hash-spacer";
+          spacer.setAttribute("aria-hidden", "true");
+          document.body.appendChild(spacer);
+        }
+        spacer.style.height = "0px";
+        var margin = parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
+        var desired = el.getBoundingClientRect().top + window.scrollY - margin;
+        if (desired < 0) desired = 0;
+        var maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+        if (desired > maxScroll + 1) {
+          spacer.style.height = Math.ceil(desired - maxScroll) + "px";
+        }
+      }
+
       function flashHeading(el) {
         if (!el) return;
         el.classList.add("referred");
-        el.scrollIntoView({ block: "start" });
+        ensureScrollRoom(el);
+        var root = document.documentElement;
+        var previous = root.style.scrollBehavior;
+        root.style.scrollBehavior = "auto";
+        el.scrollIntoView({ block: "start", behavior: "instant" });
+        root.style.scrollBehavior = previous;
         el.classList.remove("heading-flash");
         void el.offsetWidth;
         el.classList.add("heading-flash");
@@ -32,6 +55,7 @@
 
       if (window.location.hash) {
         focusHashedHeading();
+        window.addEventListener("load", focusHashedHeading);
       }
       window.addEventListener("hashchange", function (evt) {
         const oldParts = evt.oldURL.split("#");
