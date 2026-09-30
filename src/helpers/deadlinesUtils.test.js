@@ -9,6 +9,8 @@ import {
   daysUntil,
   relativeSuffix,
   nearestAdjective,
+  isPastControlDate,
+  markPastControlSections,
   moscowToday,
   extractHeadings,
   getControlDeadlines,
@@ -56,6 +58,50 @@ describe("deadlinesUtils", () => {
     expect(nearestAdjective("ЛР")).toBe("Ближайшая");
     expect(nearestAdjective("Экзамен")).toBe("Ближайшее");
     expect(nearestAdjective("Контрольная")).toBe("Ближайшая");
+  });
+
+  it("treats a control date as past only before Moscow today", () => {
+    const today = new Date(2026, 8, 30);
+    expect(isPastControlDate("На 25 Сентября", today)).toBe(true);
+    expect(isPastControlDate("На 30 Сентября", today)).toBe(false);
+    expect(isPastControlDate("На 1 Октября", today)).toBe(false);
+    expect(isPastControlDate("Тема без даты", today)).toBe(false);
+    const moscowSep30 = moscowToday(new Date(Date.UTC(2026, 8, 29, 22, 0, 0)));
+    expect(isPastControlDate("На 29 Сентября", moscowSep30)).toBe(true);
+    expect(isPastControlDate("На 30 сентября", moscowSep30)).toBe(false);
+  });
+
+  it("dims a passed heading and the text under it, not the following date", () => {
+    const classesOf = () => {
+      const names = new Set();
+      return {
+        add(name) {
+          names.add(name);
+        },
+        contains(name) {
+          return names.has(name);
+        },
+      };
+    };
+    const el = (tag, text) => ({ tagName: tag, textContent: text, classList: classesOf() });
+    const header = el("HEADER", "");
+    const pastHeading = el("H2", "На 16 Сентября");
+    const pastBody = el("UL", "занятие");
+    const todayHeading = el("H2", "На 30 Сентября");
+    const todayBody = el("UL", "занятие");
+    const futureHeading = el("H2", "На 1 Октября");
+    markPastControlSections(
+      {
+        children: [header, pastHeading, pastBody, todayHeading, todayBody, futureHeading],
+      },
+      new Date(2026, 8, 30)
+    );
+    expect(header.classList.contains("dg-past-deadline")).toBe(false);
+    expect(pastHeading.classList.contains("dg-past-deadline")).toBe(true);
+    expect(pastBody.classList.contains("dg-past-deadline")).toBe(true);
+    expect(todayHeading.classList.contains("dg-past-deadline")).toBe(false);
+    expect(todayBody.classList.contains("dg-past-deadline")).toBe(false);
+    expect(futureHeading.classList.contains("dg-past-deadline")).toBe(false);
   });
 
   it("extracts markdown headings without a trailing dollar", () => {

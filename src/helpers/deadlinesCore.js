@@ -79,6 +79,32 @@ var dgDeadlinesApi = (function () {
     return candidate;
   }
 
+  /** True when a «На <день> <месяц>» heading is strictly before Moscow today. */
+  function isPastControlDate(headingText, today) {
+    var parsed = parseDateHeading(typeof headingText === "string" ? headingText : "");
+    if (!parsed) return false;
+    var today0 = startOfDay(today || moscowToday());
+    var candidate = new Date(today0.getFullYear(), parsed.month, parsed.day);
+    return candidate < today0;
+  }
+
+  /**
+   * Mark a passed date heading and the blocks under it until the next heading.
+   * `root` is the note body; only its direct children are considered.
+   */
+  function markPastControlSections(root, today) {
+    if (!root || !root.children) return;
+    var today0 = today || moscowToday();
+    var past = false;
+    var children = root.children;
+    for (var i = 0; i < children.length; i++) {
+      var el = children[i];
+      var tag = el.tagName || "";
+      if (/^H[1-6]$/.test(tag)) past = isPastControlDate(el.textContent, today0);
+      if (past && el.classList) el.classList.add("dg-past-deadline");
+    }
+  }
+
   function daysUntil(target, today) {
     var a = calendarUTC(today || moscowToday());
     var b = calendarUTC(target);
@@ -166,6 +192,8 @@ var dgDeadlinesApi = (function () {
     daysUntil: daysUntil,
     relativeSuffix: relativeSuffix,
     nearestAdjective: nearestAdjective,
+    isPastControlDate: isPastControlDate,
+    markPastControlSections: markPastControlSections,
     pickControlDeadlines: pickControlDeadlines,
   };
 })();
