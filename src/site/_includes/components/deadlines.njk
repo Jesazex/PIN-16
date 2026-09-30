@@ -102,6 +102,47 @@
     if (event.key === "Escape") closeTable();
   }
 
+  function bindDeadlinePinch(scroll) {
+    var query = window.matchMedia("(max-width: 1000px)");
+    var table = scroll.querySelector("table");
+    if (!table) return;
+    var scale = 1;
+    var startDist = 0;
+    var startScale = 1;
+
+    function distance(touches) {
+      var dx = touches[0].clientX - touches[1].clientX;
+      var dy = touches[0].clientY - touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy) || 1;
+    }
+
+    function applyScale(next) {
+      if (next < 0.5) next = 0.5;
+      if (next > 3) next = 3;
+      scale = next;
+      table.style.zoom = String(scale);
+    }
+
+    scroll.addEventListener("touchstart", function (event) {
+      if (!query.matches || event.touches.length !== 2) return;
+      startDist = distance(event.touches);
+      startScale = scale;
+    }, { passive: true });
+
+    scroll.addEventListener("touchmove", function (event) {
+      if (!query.matches || event.touches.length !== 2 || !startDist) return;
+      event.preventDefault();
+      applyScale(startScale * (distance(event.touches) / startDist));
+    }, { passive: false });
+
+    function endPinch(event) {
+      if (!event.touches || event.touches.length < 2) startDist = 0;
+    }
+
+    scroll.addEventListener("touchend", endPinch);
+    scroll.addEventListener("touchcancel", endPinch);
+  }
+
   function openTable(table) {
     closeTable();
     var overlay = document.createElement("div");
@@ -136,6 +177,7 @@
     }
     panel.appendChild(header);
     panel.appendChild(scroll);
+    bindDeadlinePinch(scroll);
     overlay.appendChild(panel);
     overlay.addEventListener("click", function (event) {
       if (event.target === overlay) closeTable();
