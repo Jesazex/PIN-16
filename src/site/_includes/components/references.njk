@@ -13,7 +13,7 @@
         return el.closest("h1, h2, h3, h4, h5, h6") || el;
       }
 
-      function ensureScrollRoom(el) {
+      function hashSpacer() {
         var spacer = document.getElementById("dg-hash-spacer");
         if (!spacer) {
           spacer = document.createElement("div");
@@ -21,10 +21,10 @@
           spacer.setAttribute("aria-hidden", "true");
           document.body.appendChild(spacer);
         }
-        spacer.style.height = "0px";
-        var margin = parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
-        var desired = el.getBoundingClientRect().top + window.scrollY - margin;
-        if (desired < 0) desired = 0;
+        return spacer;
+      }
+
+      function contentEnd(spacer) {
         var end = 0;
         var nodes = document.body.children;
         for (var i = 0; i < nodes.length; i++) {
@@ -34,9 +34,45 @@
           var bottom = nodes[i].getBoundingClientRect().bottom + window.scrollY;
           if (bottom > end) end = bottom;
         }
+        return end;
+      }
+
+      // A note that already fits the viewport must not gain empty scroll room.
+      function applyPageFit() {
+        var spacer = document.getElementById("dg-hash-spacer");
+        var previous = spacer ? spacer.style.height : "";
+        if (spacer) spacer.style.height = "0px";
+        var root = document.documentElement;
+        root.classList.remove("dg-page-fits");
+        var fits = root.scrollHeight <= window.innerHeight + 1;
+        root.classList.toggle("dg-page-fits", fits);
+        if (fits) {
+          if (spacer) spacer.style.height = "0px";
+          if (window.scrollY) window.scrollTo(0, 0);
+        } else if (spacer) {
+          spacer.style.height = previous;
+        }
+      }
+
+      function ensureScrollRoom(el) {
+        var spacer = hashSpacer();
+        spacer.style.height = "0px";
+        var end = contentEnd(spacer);
+        if (end <= window.innerHeight + 1) {
+          document.documentElement.classList.add("dg-page-fits");
+          return;
+        }
+        document.documentElement.classList.remove("dg-page-fits");
+        var margin = parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
+        var desired = el.getBoundingClientRect().top + window.scrollY - margin;
+        if (desired < 0) desired = 0;
         var need = desired + window.innerHeight - end;
         spacer.style.height = need > 1 ? Math.ceil(need) + "px" : "0px";
       }
+
+      applyPageFit();
+      window.addEventListener("load", applyPageFit);
+      window.addEventListener("resize", applyPageFit);
 
       function scrollHeadingIntoPlace(el) {
         ensureScrollRoom(el);

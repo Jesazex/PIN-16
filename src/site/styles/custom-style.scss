@@ -31,6 +31,10 @@ body {
     overflow-x: clip;
 }
 
+html.dg-page-fits {
+    overflow-y: hidden;
+}
+
 // Left filetree flush to the left edge of the viewport.
 .filetree-wrapper {
     left: 0 !important;
@@ -315,6 +319,12 @@ body:has(#dg-deadline-table) {
     padding: 8px;
     background: var(--background-primary, #202020);
     overscroll-behavior: contain;
+}
+
+@media (max-width: 1000px) {
+    .deadline-table-scroll {
+        touch-action: pan-x pan-y;
+    }
 }
 
 .deadline-table-empty {
@@ -989,11 +999,11 @@ h6.heading-flash {
     0%,
     75% {
         background-color: color-mix(in srgb, var(--text-accent, #8ab4f8) 42%, transparent);
-        box-shadow: inset 3px 0 0 var(--text-accent, #8ab4f8);
+        box-shadow: none;
     }
     100% {
         background-color: transparent;
-        box-shadow: inset 3px 0 0 transparent;
+        box-shadow: none;
     }
 }
 
