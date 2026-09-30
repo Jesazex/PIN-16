@@ -1,0 +1,137 @@
+<script>
+(function () {
+  var family = "";
+  try {
+    family = getComputedStyle(document.body).fontFamily || "sans-serif";
+  } catch (e) {
+    family = "sans-serif";
+  }
+  var canvas = document.createElement("canvas");
+  var ctx = canvas.getContext("2d");
+
+  function translateX(el) {
+    var t = el.getAttribute("transform") || "";
+    var match = t.match(/translate\(\s*(-?[\d.]+)/);
+    return match ? parseFloat(match[1]) : 0;
+  }
+
+  function setTranslateX(el, x) {
+    var t = el.getAttribute("transform") || "";
+    var rounded = Math.round(x * 100) / 100;
+    if (/translate\(/.test(t)) {
+      el.setAttribute("transform", t.replace(/translate\(\s*(-?[\d.]+)((?:[\s,]+-?[\d.]+)?)\s*\)/, function (_full, _x, rest) {
+        return "translate(" + rounded + (rest || ",0") + ")";
+      }));
+      return;
+    }
+    el.setAttribute("transform", ("translate(" + rounded + ",0) " + t).trim());
+  }
+
+  function localScale(el) {
+    var t = el.getAttribute("transform") || "";
+    var match = t.match(/scale\(\s*(-?[\d.]+)/);
+    return match ? Math.abs(parseFloat(match[1])) || 1 : 1;
+  }
+
+  function shrinkSvg(svg, delta) {
+    if (!svg || !delta) return;
+    var vb = (svg.getAttribute("viewBox") || "").trim().split(/[\s,]+/).map(Number);
+    if (vb.length < 4 || !vb[2]) return;
+    var width = parseFloat(svg.getAttribute("width"));
+    var unit = width / vb[2];
+    vb[2] = Math.max(1, vb[2] - delta);
+    svg.setAttribute("viewBox", vb.join(" "));
+    if (width) svg.setAttribute("width", Math.max(0.1, width - delta * unit).toFixed(3) + "ex");
+  }
+
+  function shiftFollowing(el, delta) {
+    if (!el || !delta) return;
+    var parent = el.parentElement;
+    if (!parent || parent.localName === "svg") {
+      if (parent && parent.localName === "svg") shrinkSvg(parent, delta);
+      return;
+    }
+    var sib = el.nextElementSibling;
+    while (sib) {
+      setTranslateX(sib, translateX(sib) - delta);
+      sib = sib.nextElementSibling;
+    }
+    shiftFollowing(parent, delta * localScale(parent));
+  }
+
+  function pieceChar(el) {
+    if (el.localName === "text") return el.textContent || "";
+    if (el.localName !== "path" && el.localName !== "use") return null;
+    var code = el.getAttribute("data-c") || "";
+    if (!/^[0-9A-Fa-f]+$/.test(code)) return null;
+    var cp = parseInt(code, 16);
+    if (!cp || cp > 0x10ffff) return null;
+    return String.fromCodePoint(cp);
+  }
+
+  function allocatedWidth(group) {
+    var next = group.nextElementSibling;
+    if (next) return translateX(next) - translateX(group);
+    var max = 0;
+    var child = group.firstElementChild;
+    while (child) {
+      var nextChild = child.nextElementSibling;
+      var width = nextChild ? translateX(nextChild) - translateX(child) : 700;
+      max = Math.max(max, translateX(child) + Math.max(width, 0));
+      child = nextChild;
+    }
+    return max;
+  }
+
+  function depth(el) {
+    var n = 0;
+    while (el) {
+      n += 1;
+      el = el.parentElement;
+    }
+    return n;
+  }
+
+  function reflowGroup(group, oldWidth) {
+    var chars = "";
+    var fontSize = 884;
+    var child = group.firstElementChild;
+    while (child) {
+      var ch = pieceChar(child);
+      if (ch == null) return;
+      if (child.localName === "text") {
+        var size = parseFloat(child.getAttribute("font-size"));
+        if (size) fontSize = size;
+      }
+      chars += ch === "\u00a0" ? " " : ch;
+      child = child.nextElementSibling;
+    }
+    if (!chars.trim()) return;
+    ctx.font = "600 " + fontSize + "px " + family;
+    var measured = ctx.measureText(chars).width;
+    if (!measured) return;
+    while (group.firstChild) group.removeChild(group.firstChild);
+    var text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    text.setAttribute("data-dg-text", "true");
+    text.setAttribute("transform", "scale(1,-1)");
+    text.setAttribute("font-size", String(fontSize));
+    text.setAttribute("font-family", family);
+    text.setAttribute("font-weight", "600");
+    text.setAttribute("font-style", "normal");
+    text.setAttribute("textLength", String(Math.round(measured * 100) / 100));
+    text.setAttribute("lengthAdjust", "spacing");
+    text.textContent = chars;
+    group.appendChild(text);
+    if (oldWidth != null) shiftFollowing(group, oldWidth - measured);
+  }
+
+  document.querySelectorAll("mjx-container svg").forEach(function (svg) {
+    var groups = Array.prototype.slice.call(svg.querySelectorAll('g[data-mml-node="mtext"]'));
+    var widths = new Map();
+    groups.forEach(function (group) { widths.set(group, allocatedWidth(group)); });
+    groups.sort(function (a, b) { return depth(b) - depth(a); });
+    groups.forEach(function (group) { reflowGroup(group, widths.get(group)); });
+  });
+  document.documentElement.classList.remove("dg-math-pending");
+})();
+</script>
