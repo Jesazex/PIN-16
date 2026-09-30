@@ -86,6 +86,7 @@ permalink: "notes/{{ page.fileSlug | slugify }}/"
     {% include "components/sidebarToggles.njk" %}
 
     {% include "components/references.njk" %}
+    {% include "components/mathText.njk" %}
     {% set slotName = "common.footer" %}{% include "components/pluginSlot.njk" %}
     {% set slotName = "notes.footer" %}{% include "components/pluginSlot.njk" %}
     {% for imp in dynamics.common.footer %}

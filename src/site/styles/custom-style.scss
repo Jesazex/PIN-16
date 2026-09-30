@@ -35,6 +35,12 @@ html.dg-page-fits {
     overflow-y: hidden;
 }
 
+// Words inside formulas are redrawn in the page font. Hide the loose
+// fallback glyphs until that spacing is applied.
+html.dg-math-pending g[data-mml-node="mtext"] {
+    visibility: hidden;
+}
+
 // Left filetree flush to the left edge of the viewport.
 .filetree-wrapper {
     left: 0 !important;
