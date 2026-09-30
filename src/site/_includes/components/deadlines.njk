@@ -1,6 +1,7 @@
 {%- set deadlines = userComputed.controlDeadlines if userComputed else [] -%}
 {%- if deadlines and deadlines.length -%}
-<div class="deadlines-block">
+<noscript><style>[data-dg-deadlines]{visibility:visible !important}</style></noscript>
+<div class="deadlines-block" id="dg-deadlines" data-dg-deadlines style="visibility:hidden">
   {%- for line in deadlines -%}
   <div class="deadline-line">
     <span class="deadline-label">{{ line.label }}</span>
@@ -8,4 +9,39 @@
   </div>
   {%- endfor -%}
 </div>
+<script>
+(function () {
+  {{ userComputed.deadlinesClientSource | safe }}
+  var block = document.getElementById("dg-deadlines");
+  if (!block) {
+    var script = document.currentScript;
+    block = script && script.previousElementSibling;
+  }
+  if (!block) return;
+  try {
+    var lines = dgDeadlinesApi.pickControlDeadlines({{ userComputed.controlDeadlineCandidatesJson | safe }});
+    var rows = [];
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      var row = document.createElement("div");
+      row.className = "deadline-line";
+      var label = document.createElement("span");
+      label.className = "deadline-label";
+      label.textContent = line.label;
+      var link = document.createElement("a");
+      link.className = "deadline-link";
+      link.href = line.href;
+      link.textContent = line.linkText;
+      row.appendChild(label);
+      row.appendChild(link);
+      rows.push(row);
+    }
+    if (rows.length) {
+      block.textContent = "";
+      for (var j = 0; j < rows.length; j++) block.appendChild(rows[j]);
+    }
+  } catch (err) {}
+  block.style.visibility = "visible";
+})();
+</script>
 {%- endif -%}

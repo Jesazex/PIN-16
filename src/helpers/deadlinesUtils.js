@@ -1,108 +1,16 @@
 const fs = require("fs");
 const { headerToId } = require("./utils");
+const {
+  moscowToday,
+  parseDateHeading,
+  resolveUpcomingDate,
+  daysUntil,
+  relativeSuffix,
+  nearestAdjective,
+  pickControlDeadlines,
+} = require("./deadlinesCore");
 
 const ROOT_FOLDER = "Формы контроля";
-
-const MONTHS = {
-  января: 0,
-  февраля: 1,
-  марта: 2,
-  апреля: 3,
-  мая: 4,
-  июня: 5,
-  июля: 6,
-  августа: 7,
-  сентября: 8,
-  октября: 9,
-  ноября: 10,
-  декабря: 11,
-};
-
-const FEMININE_TYPES = new Set(["КР", "ЛР"]);
-
-const MOSCOW_TZ = "Europe/Moscow";
-
-/** Calendar year/month/day of an instant in Europe/Moscow (no DST, UTC+3). */
-function moscowYMD(instant) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: MOSCOW_TZ,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(instant);
-  const get = (type) => Number(parts.find((part) => part.type === type).value);
-  return { y: get("year"), m: get("month") - 1, d: get("day") };
-}
-
-/**
- * Local Date whose calendar day is "today" in Moscow.
- * Day math then uses these Y-M-D numbers, so the build server's timezone
- * cannot shift the deadline.
- */
-function moscowToday(now = new Date()) {
-  const { y, m, d } = moscowYMD(now);
-  return new Date(y, m, d);
-}
-
-function startOfDay(date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function calendarUTC(date) {
-  const day = startOfDay(date);
-  return Date.UTC(day.getFullYear(), day.getMonth(), day.getDate());
-}
-
-function parseDateHeading(heading) {
-  if (!heading || typeof heading !== "string") return null;
-  const match = heading.trim().match(/^На\s+(\d{1,2})\s+([А-Яа-яёЁ]+)\s*$/i);
-  if (!match) return null;
-  const day = parseInt(match[1], 10);
-  const monthToken = match[2].toLowerCase();
-  if (!(monthToken in MONTHS) || day < 1 || day > 31) return null;
-  return {
-    day,
-    month: MONTHS[monthToken],
-    displayDate: `${day} ${monthToken}`,
-    heading: heading.trim(),
-  };
-}
-
-/** Resolve calendar date: current year, or next year if already before today. */
-function resolveUpcomingDate(day, month, today = moscowToday()) {
-  const today0 = startOfDay(today);
-  let candidate = new Date(today0.getFullYear(), month, day);
-  if (candidate < today0) {
-    candidate = new Date(today0.getFullYear() + 1, month, day);
-  }
-  return candidate;
-}
-
-function daysUntil(target, today = moscowToday()) {
-  const a = calendarUTC(today);
-  const b = calendarUTC(target);
-  return Math.round((b - a) / 86400000);
-}
-
-function relativeSuffix(days) {
-  if (days === 0) return "Сегодня";
-  const n = Math.abs(days);
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  let word;
-  if (mod100 >= 11 && mod100 <= 14) word = "дней";
-  else if (mod10 === 1) word = "день";
-  else if (mod10 >= 2 && mod10 <= 4) word = "дня";
-  else word = "дней";
-  return `${n} ${word}`;
-}
-
-function nearestAdjective(typeName) {
-  if (FEMININE_TYPES.has(typeName)) return "Ближайшая";
-  const lower = String(typeName || "").toLowerCase();
-  if (/[ая]я$/i.test(lower)) return "Ближайшая";
-  return "Ближайшее";
-}
 
 function extractHeadings(markdown) {
   if (!markdown) return [];
@@ -140,12 +48,12 @@ function notePathParts(item) {
 }
 
 /**
- * Build upcoming-deadline lines from notes under "Формы контроля".
- * Returns [] when that folder is absent.
+ * Every dated heading under "Формы контроля", without a "today".
+ * The page recomputes the nearest line from this list on each visit.
  */
-function getControlDeadlines(data, today = moscowToday()) {
+function getControlDeadlineCandidates(data) {
   const notes = (data.collections && data.collections.note) || [];
-  const byType = new Map();
+  const candidates = [];
 
   for (const item of notes) {
     const parts = notePathParts(item);
@@ -154,63 +62,32 @@ function getControlDeadlines(data, today = moscowToday()) {
 
     const typeName = parts[1];
     const subjectName = parts[parts.length - 1];
-    const body = readNoteBody(item);
-    const headings = extractHeadings(body);
+    const permalink = item.url || "/";
+    const headings = extractHeadings(readNoteBody(item));
 
-    if (!byType.has(typeName)) byType.set(typeName, []);
-    byType.get(typeName).push({
-      subjectName,
-      permalink: item.url || "/",
-      headings,
-    });
-  }
-
-  if (byType.size === 0) return [];
-
-  const lines = [];
-  for (const [typeName, subjects] of byType.entries()) {
-    let best = null;
-    for (const subject of subjects) {
-      for (const heading of subject.headings) {
-        const parsed = parseDateHeading(heading);
-        if (!parsed) continue;
-        const when = resolveUpcomingDate(parsed.day, parsed.month, today);
-        const days = daysUntil(when, today);
-        if (days < 0) continue;
-        if (
-          !best ||
-          days < best.days ||
-          (days === best.days &&
-            subject.subjectName.localeCompare(best.subjectName, "ru") < 0)
-        ) {
-          best = {
-            typeName,
-            subjectName: subject.subjectName,
-            permalink: subject.permalink,
-            heading: parsed.heading,
-            displayDate: parsed.displayDate,
-            days,
-            headingId: headerToId(parsed.heading),
-          };
-        }
-      }
+    for (const heading of headings) {
+      const parsed = parseDateHeading(heading);
+      if (!parsed) continue;
+      candidates.push({
+        typeName,
+        subjectName,
+        day: parsed.day,
+        month: parsed.month,
+        displayDate: parsed.displayDate,
+        href: `${permalink}#${headerToId(parsed.heading)}`,
+      });
     }
-    if (!best) continue;
-    const adj = nearestAdjective(typeName);
-    lines.push({
-      typeName,
-      adjective: adj,
-      label: `${adj} ${typeName}:`,
-      linkText: `${best.displayDate} - ${best.subjectName} (${relativeSuffix(best.days)})`,
-      href: `${best.permalink}#${best.headingId}`,
-      days: best.days,
-    });
   }
 
-  lines.sort(
-    (a, b) => a.days - b.days || a.typeName.localeCompare(b.typeName, "ru")
-  );
-  return lines;
+  return candidates;
+}
+
+/**
+ * Build upcoming-deadline lines from notes under "Формы контроля".
+ * Returns [] when that folder is absent.
+ */
+function getControlDeadlines(data, today = moscowToday()) {
+  return pickControlDeadlines(getControlDeadlineCandidates(data), today);
 }
 
 module.exports = {
@@ -222,5 +99,7 @@ module.exports = {
   relativeSuffix,
   nearestAdjective,
   extractHeadings,
+  pickControlDeadlines,
+  getControlDeadlineCandidates,
   getControlDeadlines,
 };

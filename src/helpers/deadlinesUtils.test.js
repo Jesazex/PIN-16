@@ -1,4 +1,8 @@
 import { describe, it, expect } from "vitest";
+import fs from "fs";
+import vm from "vm";
+import path from "path";
+import { fileURLToPath } from "url";
 import {
   parseDateHeading,
   resolveUpcomingDate,
@@ -8,7 +12,11 @@ import {
   moscowToday,
   extractHeadings,
   getControlDeadlines,
+  getControlDeadlineCandidates,
+  pickControlDeadlines,
 } from "./deadlinesUtils.js";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
 
 describe("deadlinesUtils", () => {
   it("parses На <day> <month> headings", () => {
@@ -94,5 +102,53 @@ describe("deadlinesUtils", () => {
     expect(lines[0].linkText).toBe("1 октября - Физика (2 дня)");
     expect(lines[0].days).toBe(2);
     expect(lines[0].href).toContain("#");
+  });
+
+  it("recomputes the nearest line when Moscow today changes", () => {
+    const data = {
+      collections: {
+        note: [
+          {
+            filePathStem: "/notes/Формы контроля/ДЗ/Физика",
+            url: "/formy-kontrolya/dz/fizika/",
+            template: {
+              inputContent: "## На 17 сентября\n\n## На 1 октября\n",
+            },
+          },
+          {
+            filePathStem: "/notes/Формы контроля/ДЗ/Матан",
+            url: "/formy-kontrolya/dz/matan/",
+            template: {
+              inputContent: "## На 30 сентября\n",
+            },
+          },
+        ],
+      },
+    };
+    const september29 = moscowToday(new Date(Date.UTC(2026, 8, 28, 22, 0, 0)));
+    const october1 = moscowToday(new Date(Date.UTC(2026, 8, 30, 21, 0, 0)));
+    const candidates = getControlDeadlineCandidates(data);
+
+    expect(candidates.some((item) => "days" in item)).toBe(false);
+    expect(getControlDeadlines(data, september29)[0].linkText).toBe(
+      "30 сентября - Матан (1 день)"
+    );
+    expect(pickControlDeadlines(candidates, october1)[0].linkText).toBe(
+      "1 октября - Физика (Сегодня)"
+    );
+  });
+
+  it("runs the inlined browser bundle without Node globals", () => {
+    const source = fs.readFileSync(path.join(here, "deadlinesCore.js"), "utf8");
+    const clientSource = source.replace(/\nif \(typeof module === "object"[\s\S]*$/, "\n");
+    const sandbox = {};
+    vm.runInNewContext(clientSource, sandbox);
+    const today = sandbox.dgDeadlinesApi.moscowToday(new Date(Date.UTC(2026, 8, 30, 21, 0, 0)));
+    const lines = sandbox.dgDeadlinesApi.pickControlDeadlines(
+      [{ typeName: "ЛР", subjectName: "Физика", day: 1, month: 9, displayDate: "1 октября", href: "/#x" }],
+      today
+    );
+    expect(lines[0].linkText).toBe("1 октября - Физика (Сегодня)");
+    expect(sandbox.module).toBeUndefined();
   });
 });
