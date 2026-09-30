@@ -203,7 +203,7 @@ describe("deadlinesUtils", () => {
     expect(lines[0].subjects.map((item) => item.href)).toEqual(["/infa#a", "/fizika#a"]);
   });
 
-  it("builds a table from today through the last recorded date, with ДЗ first", () => {
+  it("builds a row for every day from today through the last recorded date, with ДЗ first", () => {
     const today = new Date(2026, 8, 30);
     const table = buildDeadlineTable(
       [
@@ -215,11 +215,22 @@ describe("deadlinesUtils", () => {
       ],
       today
     );
+    const expectedDays =
+      Math.round((Date.UTC(2026, 11, 18) - Date.UTC(2026, 8, 30)) / 86400000) + 1;
     expect(table.columns).toEqual(["ДЗ", "БДЗ", "ЛР"]);
-    expect(table.rows.map((row) => row.label)).toEqual(["30 сентября", "1 октября", "18 декабря"]);
+    expect(table.rows).toHaveLength(expectedDays);
+    expect(table.rows[0].label).toBe("30 сентября");
+    expect(table.rows[1].label).toBe("1 октября");
+    expect(table.rows[2].label).toBe("2 октября");
+    expect(table.rows[2].cells).toEqual({ ДЗ: [], БДЗ: [], ЛР: [] });
+    expect(table.rows.at(-1).label).toBe("18 декабря");
+    expect(table.rows.at(-1).cells["БДЗ"].map((item) => item.subjectName)).toEqual(["Физика"]);
     expect(table.rows[1].cells["ДЗ"].map((item) => item.subjectName)).toEqual(["Физика"]);
     expect(table.rows[1].cells["ЛР"][0].href).toBe("/lr-infa#oct");
     expect(table.rows[0].cells["ЛР"]).toEqual([]);
+    for (let i = 1; i < table.rows.length; i++) {
+      expect(table.rows[i].time - table.rows[i - 1].time).toBe(86400000);
+    }
   });
 
   it("runs the inlined browser bundle without Node globals", () => {
