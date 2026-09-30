@@ -295,9 +295,11 @@ body {
 }
 
 .deadline-table-scroll table {
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     width: max-content;
     min-width: 100%;
+    background: var(--background-primary, #1e232f);
 }
 
 .deadline-table-scroll th,
