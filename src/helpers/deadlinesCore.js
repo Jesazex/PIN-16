@@ -96,13 +96,31 @@ var dgDeadlinesApi = (function () {
     if (!root || !root.children) return;
     var today0 = today || moscowToday();
     var past = false;
-    var children = root.children;
+    var seenPast = false;
+    var boundary = null;
+    var children = [];
+    for (var n = 0; n < root.children.length; n++) children.push(root.children[n]);
     for (var i = 0; i < children.length; i++) {
       var el = children[i];
       var tag = el.tagName || "";
-      if (/^H[1-6]$/.test(tag)) past = isPastControlDate(el.textContent, today0);
-      if (past && el.classList) el.classList.add("dg-past-deadline");
+      if (/^H[1-6]$/.test(tag)) {
+        past = isPastControlDate(el.textContent, today0);
+        if (seenPast && !past && !boundary) boundary = el;
+      }
+      if (past && el.classList) {
+        el.classList.add("dg-past-deadline");
+        seenPast = true;
+      }
     }
+    if (!boundary || typeof root.insertBefore !== "function") return;
+    var hr;
+    if (typeof document !== "undefined" && document.createElement) {
+      hr = document.createElement("hr");
+      hr.className = "dg-deadline-divider";
+    } else {
+      hr = { tagName: "HR", className: "dg-deadline-divider" };
+    }
+    root.insertBefore(hr, boundary);
   }
 
   function daysUntil(target, today) {
@@ -124,6 +142,21 @@ var dgDeadlinesApi = (function () {
     return n + " " + word;
   }
 
+  function relativePhrase(days) {
+    if (days === 0) return "Сегодня";
+    return "через " + relativeSuffix(days);
+  }
+
+  function compareSubjects(a, b) {
+    return String(a.subjectName).localeCompare(String(b.subjectName), "ru");
+  }
+
+  function compareControlTypes(a, b) {
+    if (a === "ДЗ" && b !== "ДЗ") return -1;
+    if (b === "ДЗ" && a !== "ДЗ") return 1;
+    return String(a).localeCompare(String(b), "ru");
+  }
+
   function nearestAdjective(typeName) {
     if (FEMININE_TYPES[typeName]) return "Ближайшая";
     var lower = String(typeName || "").toLowerCase();
@@ -131,9 +164,29 @@ var dgDeadlinesApi = (function () {
     return "Ближайшее";
   }
 
+  function upcomingItems(items, today0) {
+    var bestDays = null;
+    var subjects = [];
+    for (var j = 0; j < items.length; j++) {
+      var candidate = items[j];
+      var when = resolveUpcomingDate(candidate.day, candidate.month, today0);
+      var days = daysUntil(when, today0);
+      if (days < 0) continue;
+      var subject = { subjectName: candidate.subjectName, href: candidate.href };
+      if (bestDays === null || days < bestDays) {
+        bestDays = days;
+        subjects = [subject];
+      } else if (days === bestDays) {
+        subjects.push(subject);
+      }
+    }
+    subjects.sort(compareSubjects);
+    return { days: bestDays, subjects: subjects };
+  }
+
   /**
-   * Pick the soonest upcoming date per control type.
-   * `candidates` are undated-relative: {typeName, subjectName, day, month, displayDate, href}.
+   * Soonest upcoming date per control type.
+   * Every subject that shares that date is listed. No calendar date in the text.
    */
   function pickControlDeadlines(candidates, today) {
     var today0 = today || moscowToday();
@@ -147,35 +200,21 @@ var dgDeadlinesApi = (function () {
 
     var lines = [];
     byType.forEach(function (items, typeName) {
-      var best = null;
-      for (var j = 0; j < items.length; j++) {
-        var candidate = items[j];
-        var when = resolveUpcomingDate(candidate.day, candidate.month, today0);
-        var days = daysUntil(when, today0);
-        if (days < 0) continue;
-        if (
-          !best ||
-          days < best.days ||
-          (days === best.days &&
-            String(candidate.subjectName).localeCompare(best.subjectName, "ru") < 0)
-        ) {
-          best = {
-            subjectName: candidate.subjectName,
-            displayDate: candidate.displayDate,
-            href: candidate.href,
-            days: days,
-          };
-        }
-      }
-      if (!best) return;
+      var upcoming = upcomingItems(items, today0);
+      if (upcoming.days === null || !upcoming.subjects.length) return;
+      var names = [];
+      for (var s = 0; s < upcoming.subjects.length; s++) names.push(upcoming.subjects[s].subjectName);
+      var whenText = relativePhrase(upcoming.days);
       var adj = nearestAdjective(typeName);
       lines.push({
         typeName: typeName,
         adjective: adj,
         label: adj + " " + typeName + ":",
-        linkText: best.displayDate + " - " + best.subjectName + " (" + relativeSuffix(best.days) + ")",
-        href: best.href,
-        days: best.days,
+        subjects: upcoming.subjects,
+        whenText: whenText,
+        linkText: names.join(", ") + " - " + whenText,
+        href: upcoming.subjects[0].href,
+        days: upcoming.days,
       });
     });
 
@@ -185,13 +224,56 @@ var dgDeadlinesApi = (function () {
     return lines;
   }
 
+  /**
+   * Rows are dates from today through the latest heading still ahead.
+   * Columns are control-form folders, with ДЗ first when that folder exists.
+   */
+  function buildDeadlineTable(candidates, today) {
+    var today0 = startOfDay(today || moscowToday());
+    var year = today0.getFullYear();
+    var typeSet = {};
+    var groups = new Map();
+    var list = candidates || [];
+    for (var i = 0; i < list.length; i++) {
+      var item = list[i];
+      var when = new Date(year, item.month, item.day);
+      if (when < today0) continue;
+      typeSet[item.typeName] = true;
+      var key = String(when.getTime());
+      if (!groups.has(key)) {
+        groups.set(key, { label: item.displayDate, time: when.getTime(), byType: {} });
+      }
+      var row = groups.get(key);
+      if (!row.byType[item.typeName]) row.byType[item.typeName] = [];
+      row.byType[item.typeName].push({ subjectName: item.subjectName, href: item.href });
+    }
+    var columns = Object.keys(typeSet).sort(compareControlTypes);
+    var rows = [];
+    groups.forEach(function (row) {
+      var cells = {};
+      for (var c = 0; c < columns.length; c++) {
+        var typeName = columns[c];
+        var subjects = row.byType[typeName] || [];
+        subjects.sort(compareSubjects);
+        cells[typeName] = subjects;
+      }
+      rows.push({ label: row.label, time: row.time, cells: cells });
+    });
+    rows.sort(function (a, b) {
+      return a.time - b.time;
+    });
+    return { columns: columns, rows: rows };
+  }
+
   return {
     moscowToday: moscowToday,
     parseDateHeading: parseDateHeading,
     resolveUpcomingDate: resolveUpcomingDate,
     daysUntil: daysUntil,
     relativeSuffix: relativeSuffix,
+    relativePhrase: relativePhrase,
     nearestAdjective: nearestAdjective,
+    buildDeadlineTable: buildDeadlineTable,
     isPastControlDate: isPastControlDate,
     markPastControlSections: markPastControlSections,
     pickControlDeadlines: pickControlDeadlines,

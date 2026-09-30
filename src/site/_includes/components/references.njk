@@ -13,17 +13,57 @@
         return el.closest("h1, h2, h3, h4, h5, h6") || el;
       }
 
+      function ensureScrollRoom(el) {
+        var spacer = document.getElementById("dg-hash-spacer");
+        if (!spacer) {
+          spacer = document.createElement("div");
+          spacer.id = "dg-hash-spacer";
+          spacer.setAttribute("aria-hidden", "true");
+          document.body.appendChild(spacer);
+        }
+        spacer.style.height = "0px";
+        var margin = parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
+        var desired = el.getBoundingClientRect().top + window.scrollY - margin;
+        if (desired < 0) desired = 0;
+        var end = 0;
+        var nodes = document.body.children;
+        for (var i = 0; i < nodes.length; i++) {
+          if (nodes[i] === spacer) continue;
+          var pos = getComputedStyle(nodes[i]).position;
+          if (pos === "fixed" || pos === "sticky") continue;
+          var bottom = nodes[i].getBoundingClientRect().bottom + window.scrollY;
+          if (bottom > end) end = bottom;
+        }
+        var need = desired + window.innerHeight - end;
+        spacer.style.height = need > 1 ? Math.ceil(need) + "px" : "0px";
+      }
+
+      function scrollHeadingIntoPlace(el) {
+        ensureScrollRoom(el);
+        var margin = parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
+        var top = el.getBoundingClientRect().top + window.scrollY - margin;
+        if (top < 0) top = 0;
+        var root = document.documentElement;
+        var previous = root.style.scrollBehavior;
+        root.style.scrollBehavior = "auto";
+        window.scrollTo(0, top);
+        root.style.scrollBehavior = previous;
+      }
+
       function flashHeading(el) {
         if (!el) return;
         el.classList.add("referred");
-        el.scrollIntoView({ block: "start" });
-        el.classList.remove("heading-flash");
-        void el.offsetWidth;
-        el.classList.add("heading-flash");
-        clearTimeout(el._headingFlashTimer);
-        el._headingFlashTimer = setTimeout(function () {
-          el.classList.remove("heading-flash");
-        }, 1000);
+        if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+        scrollHeadingIntoPlace(el);
+        if (!el._headingFlashTimer) {
+          el.classList.add("heading-flash");
+          el._headingFlashTimer = setTimeout(function () {
+            el.classList.remove("heading-flash");
+          }, 1000);
+        }
+        requestAnimationFrame(function () {
+          scrollHeadingIntoPlace(el);
+        });
       }
 
       function focusHashedHeading() {
@@ -32,6 +72,10 @@
 
       if (window.location.hash) {
         focusHashedHeading();
+        window.addEventListener("load", function () {
+          var el = headingFromHash(window.location.hash);
+          if (el) scrollHeadingIntoPlace(el);
+        });
       }
       window.addEventListener("hashchange", function (evt) {
         const oldParts = evt.oldURL.split("#");
