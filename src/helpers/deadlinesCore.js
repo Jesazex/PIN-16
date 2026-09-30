@@ -224,21 +224,34 @@ var dgDeadlinesApi = (function () {
     return lines;
   }
 
+  var MONTH_NAMES = [];
+  for (var monthName in MONTHS) {
+    if (Object.prototype.hasOwnProperty.call(MONTHS, monthName)) {
+      MONTH_NAMES[MONTHS[monthName]] = monthName;
+    }
+  }
+
+  function dayLabel(date) {
+    return date.getDate() + " " + MONTH_NAMES[date.getMonth()];
+  }
+
   /**
-   * Rows are dates from today through the latest heading still ahead.
-   * Columns are control-form folders, with ДЗ first when that folder exists.
+   * One row per calendar day from today through the latest heading still ahead,
+   * including days with no deadlines. Columns are control-form folders, ДЗ first.
    */
   function buildDeadlineTable(candidates, today) {
     var today0 = startOfDay(today || moscowToday());
     var year = today0.getFullYear();
     var typeSet = {};
     var groups = new Map();
+    var latestTime = null;
     var list = candidates || [];
     for (var i = 0; i < list.length; i++) {
       var item = list[i];
       var when = new Date(year, item.month, item.day);
       if (when < today0) continue;
       typeSet[item.typeName] = true;
+      if (latestTime === null || when.getTime() > latestTime) latestTime = when.getTime();
       var key = String(when.getTime());
       if (!groups.has(key)) {
         groups.set(key, { label: item.displayDate, time: when.getTime(), byType: {} });
@@ -249,19 +262,24 @@ var dgDeadlinesApi = (function () {
     }
     var columns = Object.keys(typeSet).sort(compareControlTypes);
     var rows = [];
-    groups.forEach(function (row) {
+    if (latestTime === null) return { columns: columns, rows: rows };
+    var cursor = new Date(today0.getFullYear(), today0.getMonth(), today0.getDate());
+    while (cursor.getTime() <= latestTime) {
+      var stored = groups.get(String(cursor.getTime()));
       var cells = {};
       for (var c = 0; c < columns.length; c++) {
         var typeName = columns[c];
-        var subjects = row.byType[typeName] || [];
+        var subjects = (stored && stored.byType[typeName]) || [];
         subjects.sort(compareSubjects);
         cells[typeName] = subjects;
       }
-      rows.push({ label: row.label, time: row.time, cells: cells });
-    });
-    rows.sort(function (a, b) {
-      return a.time - b.time;
-    });
+      rows.push({
+        label: stored ? stored.label : dayLabel(cursor),
+        time: cursor.getTime(),
+        cells: cells,
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
     return { columns: columns, rows: rows };
   }
 

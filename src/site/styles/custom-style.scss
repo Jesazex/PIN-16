@@ -156,6 +156,7 @@ html.dg-page-fits {
         min-height: 0;
         overflow-y: auto;
         overflow-x: hidden;
+        overscroll-behavior: contain;
     }
 
     .inner-folder,
@@ -260,6 +261,7 @@ button.deadline-table-open {
     justify-content: center;
     padding: 24px;
     background: rgba(0, 0, 0, 0.45);
+    overscroll-behavior: contain;
 }
 
 .deadline-table-panel {
@@ -305,6 +307,10 @@ button.deadline-table-open {
     &:focus-visible {
         color: var(--text-normal);
     }
+}
+
+body:has(#dg-deadline-table) {
+    overflow: hidden;
 }
 
 .deadline-table-scroll {

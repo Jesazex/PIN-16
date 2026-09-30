@@ -18,6 +18,41 @@
 
 <script>
 (function () {
+      function overflowYScrolls(el) {
+            if (!el || el === document.body || el === document.documentElement) return false;
+            var oy = getComputedStyle(el).overflowY;
+            return oy === "auto" || oy === "scroll" || oy === "overlay";
+      }
+
+      function canConsumeWheel(el, deltaY) {
+            if (!overflowYScrolls(el) || el.scrollHeight <= el.clientHeight + 1) return false;
+            if (deltaY > 0) return el.scrollTop + el.clientHeight < el.scrollHeight - 1;
+            if (deltaY < 0) return el.scrollTop > 0;
+            return false;
+      }
+
+      function wheelConsumer(start, boundary, deltaY) {
+            var el = start && start.nodeType === 1 ? start : start && start.parentElement;
+            while (el && el !== boundary && el !== document.body && el !== document.documentElement) {
+                  if (canConsumeWheel(el, deltaY)) return el;
+                  el = el.parentElement;
+            }
+            return null;
+      }
+
+      // The file list and the open deadline table keep the article from scrolling.
+      document.addEventListener("wheel", function (event) {
+            if (!event.deltaY) return;
+            var table = document.getElementById("dg-deadline-table");
+            if (table) {
+                  if (!wheelConsumer(event.target, table, event.deltaY)) event.preventDefault();
+                  return;
+            }
+            var list = event.target.closest && event.target.closest(".filetree-scroll");
+            if (!list) return;
+            if (!wheelConsumer(event.target, list.parentElement, event.deltaY)) event.preventDefault();
+      }, { capture: true, passive: false });
+
       const LEFT_KEY = 'dg-left-panel-collapsed';
       const RIGHT_KEY = 'dg-right-panel-collapsed';
       const LEFT_WIDTH_KEY = 'dg-left-panel-width';
