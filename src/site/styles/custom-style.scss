@@ -216,19 +216,32 @@ body {
     color: var(--text-muted);
 }
 
-.deadline-table-open {
-    display: inline-block;
-    margin-top: 0.35em;
+button.deadline-table-open {
+    display: inline;
+    height: auto;
+    margin: 0.35em 0 0;
     padding: 0;
-    border: 0;
+    border: none;
+    border-radius: 0;
+    outline: none;
+    box-shadow: none;
+    appearance: none;
     background: none;
     color: var(--text-muted);
     font: inherit;
+    font-weight: inherit;
+    line-height: inherit;
     cursor: pointer;
     text-align: left;
+    text-decoration: none;
+    white-space: normal;
 
     &:hover,
+    &:focus,
     &:focus-visible {
+        outline: none;
+        box-shadow: none;
+        background: none;
         color: var(--text-accent, var(--text-normal));
         text-decoration: underline;
     }
@@ -258,15 +271,23 @@ body {
 }
 
 .deadline-table-header {
+    position: relative;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 14px;
+    justify-content: center;
+    padding: 12px 40px;
     border-bottom: 1px solid var(--background-modifier-border, rgba(128, 128, 128, 0.35));
 }
 
+.deadline-table-title {
+    text-align: center;
+}
+
 .deadline-table-close {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
     border: 0;
     background: none;
     color: var(--text-muted);
@@ -302,23 +323,34 @@ body {
     background: var(--background-primary, #1e232f);
 }
 
-.deadline-table-scroll th,
-.deadline-table-scroll td {
-    border: 1px solid var(--background-modifier-border, rgba(128, 128, 128, 0.35));
-    padding: 8px 10px;
-    vertical-align: top;
-    text-align: left;
-    white-space: nowrap;
+.markdown-rendered .deadline-table-scroll thead tr,
+.markdown-rendered .deadline-table-scroll tbody tr,
+.markdown-rendered .deadline-table-scroll tbody tr:nth-child(odd),
+.markdown-rendered .deadline-table-scroll thead tr:hover,
+.markdown-rendered .deadline-table-scroll tbody tr:hover,
+.markdown-rendered .deadline-table-scroll tbody tr:nth-child(odd):hover {
     background: var(--background-primary, #1e232f);
+    background-color: var(--background-primary, #1e232f);
 }
 
-.deadline-table-scroll thead th,
-.deadline-table-scroll tbody th {
-    background: var(--background-secondary, #262626);
+.deadline-table-scroll th,
+.deadline-table-scroll td,
+.markdown-rendered .deadline-table-scroll thead tr > th,
+.markdown-rendered .deadline-table-scroll tbody tr > td,
+.markdown-rendered .deadline-table-scroll thead tr > th:nth-child(2n + 2),
+.markdown-rendered .deadline-table-scroll tbody tr > td:nth-child(2n + 2) {
+    border: 1px solid var(--background-modifier-border, rgba(128, 128, 128, 0.35));
+    padding: 8px 10px;
+    vertical-align: middle;
+    text-align: center;
+    white-space: nowrap;
+    background: var(--background-primary, #1e232f);
+    background-color: var(--background-primary, #1e232f);
 }
 
 .deadline-table-scroll td .deadline-subject {
     display: block;
+    text-align: center;
 }
 
 main.content > hr.dg-deadline-divider {

@@ -63,6 +63,7 @@
     var headRow = document.createElement("tr");
     var corner = document.createElement("th");
     corner.scope = "col";
+    corner.textContent = "Дата";
     headRow.appendChild(corner);
     for (var c = 0; c < columns.length; c++) {
       var th = document.createElement("th");
@@ -113,6 +114,7 @@
     var header = document.createElement("div");
     header.className = "deadline-table-header";
     var title = document.createElement("span");
+    title.className = "deadline-table-title";
     title.textContent = "Таблица дедлайнов";
     var close = document.createElement("button");
     close.type = "button";
