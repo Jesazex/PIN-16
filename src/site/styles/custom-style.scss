@@ -187,6 +187,17 @@ html.dg-math-pending g[data-mml-node="mtext"] {
     line-height: 1.45;
 }
 
+// When the open folders no longer fit, drop the deadline lines so the
+// file list can use that space. The table opener stays.
+.deadlines-block.dg-deadlines-compact {
+    padding-top: 8px;
+    padding-bottom: 10px;
+
+    .deadline-line {
+        display: none;
+    }
+}
+
 .deadline-line {
     display: flex;
     flex-direction: column;

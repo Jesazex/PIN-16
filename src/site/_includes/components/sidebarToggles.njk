@@ -320,12 +320,51 @@
             return side === 'left' ? '--dg-panel-left-width' : '--dg-panel-right-width';
       }
 
+      function fileListContentHeight(list) {
+            const top = list.getBoundingClientRect().top;
+            let bottom = top;
+            list.querySelectorAll(':scope > *').forEach((child) => {
+                  if (getComputedStyle(child).display === 'none') return;
+                  const rect = child.getBoundingClientRect();
+                  if (rect.bottom > bottom) bottom = rect.bottom;
+            });
+            return bottom - top;
+      }
+
+      function syncFiletreeDeadlines() {
+            const block = document.getElementById('dg-deadlines');
+            const list = document.querySelector('.filetree-scroll');
+            const wrapper = document.querySelector('.filetree-wrapper');
+            if (!block || !list || !wrapper) return;
+            if (!block.querySelector('.deadline-line')) {
+                  block.classList.remove('dg-deadlines-compact');
+                  return;
+            }
+            if (wrapper.getBoundingClientRect().width < 24 || list.clientHeight < 24) return;
+
+            const content = fileListContentHeight(list);
+            const compact = block.classList.contains('dg-deadlines-compact');
+            if (compact) {
+                  const extra = block._deadlineExtra || 0;
+                  const spare = list.clientHeight - content;
+                  if (extra > 0 && spare > extra + 4) block.classList.remove('dg-deadlines-compact');
+                  return;
+            }
+            if (content > list.clientHeight + 1) {
+                  const full = block.offsetHeight;
+                  block.classList.add('dg-deadlines-compact');
+                  block._deadlineExtra = Math.max(0, full - block.offsetHeight);
+            }
+      }
+      window.dgSyncFiletreeDeadlines = syncFiletreeDeadlines;
+
       function setPanelWidth(side, px, persist) {
             const value = clampPanelWidth(side, px);
             if (!value) return;
             document.documentElement.style.setProperty(widthProp(side), value + 'px');
             const handle = document.querySelector(`[data-panel-resize="${side}"]`);
             if (handle) handle.setAttribute('aria-valuenow', String(value));
+            syncFiletreeDeadlines();
             if (!persist) return;
             try {
                   localStorage.setItem(widthKey(side), String(value));
@@ -427,6 +466,16 @@
 
             if (!isCompact()) return;
 
+            const link = evt.target.closest && evt.target.closest('a[href]');
+            if (link && !evt.button && !evt.metaKey && !evt.ctrlKey && !evt.shiftKey && !evt.altKey) {
+                  const href = link.getAttribute('href') || '';
+                  if (href && href !== '#') {
+                        if (!pinnedCollapsed('left')) setCollapsed('left', true);
+                        if (!pinnedCollapsed('right')) setCollapsed('right', true);
+                        return;
+                  }
+            }
+
             const leftOpen = !pinnedCollapsed('left');
             const rightOpen = !pinnedCollapsed('right');
             if (!leftOpen && !rightOpen) return;
@@ -438,17 +487,6 @@
             if (!inLeft && !inRight && !onEdge) {
                   if (leftOpen) setCollapsed('left', true);
                   if (rightOpen) setCollapsed('right', true);
-                  return;
-            }
-
-            if (inLeft && leftOpen) {
-                  const item = evt.target.closest('a.notelink, a.filename, .notelink a, .deadline-link');
-                  if (item) setCollapsed('left', true);
-                  return;
-            }
-            if (inRight && rightOpen) {
-                  const item = evt.target.closest('.toc-container a, .toc a, .backlink-card a, a.backlink');
-                  if (item) setCollapsed('right', true);
             }
       }, true);
 
@@ -458,6 +496,22 @@
             document.querySelectorAll('[data-panel-resize]').forEach(bindResizer);
             applyStoredWidths();
             applyState();
+            const tree = document.querySelector('.filetree-scroll');
+            if (tree && window.MutationObserver) {
+                  let pending = false;
+                  const observer = new MutationObserver(() => {
+                        if (pending) return;
+                        pending = true;
+                        requestAnimationFrame(() => {
+                              pending = false;
+                              syncFiletreeDeadlines();
+                        });
+                  });
+                  observer.observe(tree, { subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+            }
+            window.addEventListener('resize', syncFiletreeDeadlines);
+            syncFiletreeDeadlines();
+            window.addEventListener('load', syncFiletreeDeadlines);
             // Lucide may load after DOMContentLoaded.
             if (!iconsReady) {
                   const t = setInterval(() => {
