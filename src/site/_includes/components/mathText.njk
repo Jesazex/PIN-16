@@ -215,13 +215,15 @@
     return getComputedStyle(document.body).backgroundColor;
   }
 
-  function centerDisplayFormula(box) {
-    if (box.getAttribute("display") !== "true") return;
-    var max = box.scrollWidth - box.clientWidth;
-    if (max > 4 && !box.dataset.dgCentered) {
-      box.scrollLeft = max / 2;
-      box.dataset.dgCentered = "1";
+  function pinFormulaLeft(box) {
+    if (box.dataset.dgPinned) return;
+    box.scrollLeft = 0;
+    var svg = box.querySelector("svg");
+    if (svg) {
+      var gap = svg.getBoundingClientRect().left - box.getBoundingClientRect().left;
+      if (gap > 1) box.scrollLeft = gap;
     }
+    box.dataset.dgPinned = "1";
   }
 
   function syncMobileMath() {
@@ -233,14 +235,14 @@
       if (!box.querySelector("svg")) return;
       if (!compact || !formulaOverflows(box)) {
         box.classList.remove("dg-math-xscroll");
-        if (box.getAttribute("display") === "true") delete box.dataset.dgCentered;
+        delete box.dataset.dgPinned;
         releaseFrame(box);
         return;
       }
       var frame = ensureFrame(box);
       frame.classList.toggle("dg-math-frame-block", box.getAttribute("display") === "true");
       box.classList.add("dg-math-xscroll");
-      centerDisplayFormula(box);
+      pinFormulaLeft(box);
       markFades(frame, box);
     });
   }
@@ -259,8 +261,8 @@
   });
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(function () {
-      document.querySelectorAll('mjx-container[display="true"]').forEach(function (box) {
-        delete box.dataset.dgCentered;
+      document.querySelectorAll(".content mjx-container").forEach(function (box) {
+        delete box.dataset.dgPinned;
       });
       syncMobileMath();
     });

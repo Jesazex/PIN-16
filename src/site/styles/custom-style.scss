@@ -963,9 +963,8 @@ html.panel-resizing .sidebar#page-panel {
     // Wide formulas scroll inside the column. Inline formulas keep MathJax's
     // own baseline: forcing vertical-align: middle dropped tall arrows
     // (overrightarrow and the like) below the surrounding text.
-    // Display math ($$) stays centered, same as on a wide screen. Flexible
-    // side spacers center a formula that fits; a wider one can still scroll
-    // to both ends.
+    // Display math ($$) stays centered when it fits, same as on a wide
+    // screen. A formula wider than the screen starts fully scrolled left.
     .content mjx-container[display="true"] {
         display: flex !important;
         flex-wrap: nowrap;
