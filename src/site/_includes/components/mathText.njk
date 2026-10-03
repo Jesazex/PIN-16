@@ -204,18 +204,43 @@
     frame.remove();
   }
 
+  function pageBackground() {
+    var el = document.querySelector(".content") || document.body;
+    var bg = "transparent";
+    while (el) {
+      bg = getComputedStyle(el).backgroundColor;
+      if (bg && bg !== "transparent" && bg !== "rgba(0, 0, 0, 0)") return bg;
+      el = el.parentElement;
+    }
+    return getComputedStyle(document.body).backgroundColor;
+  }
+
+  function centerDisplayFormula(box) {
+    if (box.getAttribute("display") !== "true") return;
+    var max = box.scrollWidth - box.clientWidth;
+    if (max > 4 && !box.dataset.dgCentered) {
+      box.scrollLeft = max / 2;
+      box.dataset.dgCentered = "1";
+    }
+  }
+
   function syncMobileMath() {
     var compact = window.matchMedia("(max-width: 1000px)").matches;
+    if (compact) {
+      document.documentElement.style.setProperty("--dg-fade-bg", pageBackground());
+    }
     document.querySelectorAll(".content mjx-container").forEach(function (box) {
       if (!box.querySelector("svg")) return;
       if (!compact || !formulaOverflows(box)) {
         box.classList.remove("dg-math-xscroll");
+        if (box.getAttribute("display") === "true") delete box.dataset.dgCentered;
         releaseFrame(box);
         return;
       }
       var frame = ensureFrame(box);
       frame.classList.toggle("dg-math-frame-block", box.getAttribute("display") === "true");
       box.classList.add("dg-math-xscroll");
+      centerDisplayFormula(box);
       markFades(frame, box);
     });
   }
@@ -233,7 +258,12 @@
     window.requestAnimationFrame(syncMobileMath);
   });
   if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(syncMobileMath);
+    document.fonts.ready.then(function () {
+      document.querySelectorAll('mjx-container[display="true"]').forEach(function (box) {
+        delete box.dataset.dgCentered;
+      });
+      syncMobileMath();
+    });
   }
 })();
 </script>

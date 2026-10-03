@@ -963,23 +963,52 @@ html.panel-resizing .sidebar#page-panel {
     // Wide formulas scroll inside the column. Inline formulas keep MathJax's
     // own baseline: forcing vertical-align: middle dropped tall arrows
     // (overrightarrow and the like) below the surrounding text.
-    .content mjx-container[display="true"],
-    .content mjx-container.dg-math-xscroll {
-        display: block !important;
+    // Display math ($$) stays centered, same as on a wide screen. Flexible
+    // side spacers center a formula that fits; a wider one can still scroll
+    // to both ends.
+    .content mjx-container[display="true"] {
+        display: flex !important;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        align-items: center;
         max-width: 100% !important;
         overflow-x: auto !important;
-        overflow-y: auto !important;
-        text-align: start !important;
+        overflow-y: hidden;
+        text-align: center !important;
         -webkit-overflow-scrolling: touch;
         overscroll-behavior-x: contain;
         scrollbar-width: none;
         -ms-overflow-style: none;
         box-sizing: border-box;
-        padding-block: 0.2em;
+        padding-block: 0.35em;
     }
 
-    .content mjx-container.dg-math-xscroll {
-        padding-inline: 0.45em;
+    .content mjx-container[display="true"]::before,
+    .content mjx-container[display="true"]::after {
+        content: "";
+        flex: 1 0 0;
+    }
+
+    .content mjx-container[display="true"] > svg {
+        flex: 0 0 auto;
+        max-width: none !important;
+    }
+
+    .content mjx-container[display="true"] mjx-assistive-mml {
+        position: absolute !important;
+    }
+
+    .content mjx-container.dg-math-xscroll:not([display="true"]) {
+        display: block !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        box-sizing: border-box;
+        padding: 0.2em 0.45em;
         scroll-padding-inline: 0.45em;
     }
 
@@ -990,8 +1019,7 @@ html.panel-resizing .sidebar#page-panel {
         height: 0;
     }
 
-    .content mjx-container[display="true"] svg,
-    .content mjx-container.dg-math-xscroll svg {
+    .content mjx-container.dg-math-xscroll:not([display="true"]) svg {
         max-width: none !important;
     }
 
@@ -1006,7 +1034,7 @@ html.panel-resizing .sidebar#page-panel {
         position: absolute;
         top: 0;
         bottom: 0;
-        width: 28px;
+        width: 72px;
         pointer-events: none;
         opacity: 0;
         z-index: 1;
@@ -1014,12 +1042,26 @@ html.panel-resizing .sidebar#page-panel {
 
     .dg-math-fade-left {
         left: 0;
-        background: linear-gradient(to right, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0));
+        background: linear-gradient(
+            to right,
+            var(--dg-fade-bg, var(--background-primary, rgb(32, 31, 31))) 0%,
+            color-mix(in srgb, var(--dg-fade-bg, var(--background-primary, rgb(32, 31, 31))) 78%, transparent) 32%,
+            color-mix(in srgb, var(--dg-fade-bg, var(--background-primary, rgb(32, 31, 31))) 38%, transparent) 62%,
+            color-mix(in srgb, var(--dg-fade-bg, var(--background-primary, rgb(32, 31, 31))) 8%, transparent) 84%,
+            transparent 100%
+        );
     }
 
     .dg-math-fade-right {
         right: 0;
-        background: linear-gradient(to left, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0));
+        background: linear-gradient(
+            to left,
+            var(--dg-fade-bg, var(--background-primary, rgb(32, 31, 31))) 0%,
+            color-mix(in srgb, var(--dg-fade-bg, var(--background-primary, rgb(32, 31, 31))) 78%, transparent) 32%,
+            color-mix(in srgb, var(--dg-fade-bg, var(--background-primary, rgb(32, 31, 31))) 38%, transparent) 62%,
+            color-mix(in srgb, var(--dg-fade-bg, var(--background-primary, rgb(32, 31, 31))) 8%, transparent) 84%,
+            transparent 100%
+        );
     }
 
     .dg-math-frame.dg-math-can-left .dg-math-fade-left,
