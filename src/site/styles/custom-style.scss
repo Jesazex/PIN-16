@@ -960,28 +960,71 @@ html.panel-resizing .sidebar#page-panel {
         overflow-x: auto;
     }
 
-    // Wide formulas stay readable: scroll them instead of clipping or shrinking.
-    .content mjx-container[display="true"] {
+    // Wide formulas scroll inside the column. Inline formulas keep MathJax's
+    // own baseline: forcing vertical-align: middle dropped tall arrows
+    // (overrightarrow and the like) below the surrounding text.
+    .content mjx-container[display="true"],
+    .content mjx-container.dg-math-xscroll {
         display: block !important;
         max-width: 100% !important;
         overflow-x: auto !important;
-        overflow-y: hidden;
+        overflow-y: auto !important;
         text-align: start !important;
         -webkit-overflow-scrolling: touch;
         overscroll-behavior-x: contain;
-        scrollbar-width: thin;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        box-sizing: border-box;
+        padding-block: 0.2em;
     }
 
-    .content mjx-container[display="true"] svg {
+    .content mjx-container.dg-math-xscroll {
+        padding-inline: 0.45em;
+        scroll-padding-inline: 0.45em;
+    }
+
+    .content mjx-container[display="true"]::-webkit-scrollbar,
+    .content mjx-container.dg-math-xscroll::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
+    }
+
+    .content mjx-container[display="true"] svg,
+    .content mjx-container.dg-math-xscroll svg {
         max-width: none !important;
     }
 
-    .content mjx-container:not([display="true"]) {
-        display: inline-block;
+    .dg-math-frame {
+        position: relative;
+        display: block;
+        width: 100%;
         max-width: 100%;
-        overflow-x: auto;
-        vertical-align: middle;
-        overscroll-behavior-x: contain;
+    }
+
+    .dg-math-fade {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 28px;
+        pointer-events: none;
+        opacity: 0;
+        z-index: 1;
+    }
+
+    .dg-math-fade-left {
+        left: 0;
+        background: linear-gradient(to right, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0));
+    }
+
+    .dg-math-fade-right {
+        right: 0;
+        background: linear-gradient(to left, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0));
+    }
+
+    .dg-math-frame.dg-math-can-left .dg-math-fade-left,
+    .dg-math-frame.dg-math-can-right .dg-math-fade-right {
+        opacity: 1;
     }
 }
 
