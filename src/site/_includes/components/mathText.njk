@@ -103,26 +103,148 @@
         var size = parseFloat(child.getAttribute("font-size"));
         if (size) fontSize = size;
       }
-      chars += ch === "\u00a0" ? " " : ch;
+      chars += String(ch).replace(/\u00a0/g, " ");
       child = child.nextElementSibling;
     }
-    if (!chars.trim()) return;
+    if (!chars) return;
+    var lead = 0;
+    while (lead < chars.length && chars.charAt(lead) === " ") lead += 1;
+    var trail = 0;
+    while (trail < chars.length - lead && chars.charAt(chars.length - 1 - trail) === " ") trail += 1;
+    var core = chars.slice(lead, chars.length - trail);
     ctx.font = "600 " + fontSize + "px " + family;
-    var measured = ctx.measureText(chars).width;
-    if (!measured) return;
+    // Canvas drops a trailing space, and SVG does the same, so the gap
+    // after a word like "\text{если }" disappeared. Keep that gap as its
+    // own advance and draw only the visible glyphs.
+    var spaceW = ctx.measureText("\u00a0").width;
+    if (!(spaceW > 0)) spaceW = ctx.measureText("n n").width - ctx.measureText("nn").width;
+    var leadW = spaceW > 0 ? spaceW * lead : 0;
+    var trailW = spaceW > 0 ? spaceW * trail : 0;
+    var coreW = core ? ctx.measureText(core).width : 0;
+    var total = leadW + coreW + trailW;
+    if (!(total > 0)) return;
     while (group.firstChild) group.removeChild(group.firstChild);
-    var text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    text.setAttribute("data-dg-text", "true");
-    text.setAttribute("transform", "scale(1,-1)");
-    text.setAttribute("font-size", String(fontSize));
-    text.setAttribute("font-family", family);
-    text.setAttribute("font-weight", "600");
-    text.setAttribute("font-style", "normal");
-    text.setAttribute("textLength", String(Math.round(measured * 100) / 100));
-    text.setAttribute("lengthAdjust", "spacing");
-    text.textContent = chars;
-    group.appendChild(text);
-    if (oldWidth != null) shiftFollowing(group, oldWidth - measured);
+    var text = null;
+    if (core) {
+      text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      text.setAttribute("data-dg-text", "true");
+      text.setAttribute("transform", (leadW ? "translate(" + (Math.round(leadW * 100) / 100) + ",0) " : "") + "scale(1,-1)");
+      text.setAttribute("font-size", String(fontSize));
+      text.setAttribute("font-family", family);
+      text.setAttribute("font-weight", "600");
+      text.setAttribute("font-style", "normal");
+      text.setAttributeNS("http://www.w3.org/XML/1998/namespace", "xml:space", "preserve");
+      text.setAttribute("textLength", String(Math.round(coreW * 100) / 100));
+      text.setAttribute("lengthAdjust", "spacing");
+      text.textContent = core;
+      group.appendChild(text);
+    }
+    var inkRight = leadW + coreW;
+    if (text) {
+      try {
+        var bb = text.getBBox();
+        if (isFinite(bb.x) && isFinite(bb.width)) inkRight = leadW + bb.x + bb.width;
+      } catch (e) {}
+    }
+    // The next symbol can paint to the left of its origin (arrow head,
+    // italic side bearing) and swallow a trailing space. Push it until the
+    // gap between the two ink boxes is the space that was typed.
+    var overhang = 0;
+    var next = group.nextElementSibling;
+    if (trail && next && next.getBBox) {
+      try {
+        var nb = next.getBBox();
+        if (isFinite(nb.x) && nb.x < 0) overhang = Math.min(-nb.x * localScale(next), fontSize);
+      } catch (e) {}
+    }
+    var gap = (trail || lead) ? inkRight + trailW + overhang : total;
+    if (oldWidth != null) shiftFollowing(group, oldWidth - gap);
+  }
+
+  function scrollHost(box) {
+    var host = box.parentElement;
+    if (host && host.classList.contains("dg-math-frame")) host = host.parentElement;
+    return host;
+  }
+
+  function formulaOverflows(box) {
+    var svg = box.querySelector("svg");
+    var host = scrollHost(box);
+    if (!svg || !host) return false;
+    return svg.getBoundingClientRect().width > host.clientWidth + 4;
+  }
+
+  function markFades(frame, box) {
+    var hidden = box.scrollWidth - box.clientWidth;
+    frame.classList.toggle("dg-math-can-left", box.scrollLeft > 2);
+    frame.classList.toggle("dg-math-can-right", hidden - box.scrollLeft > 2);
+  }
+
+  function ensureFrame(box) {
+    var frame = box.parentElement;
+    if (frame && frame.classList.contains("dg-math-frame")) return frame;
+    frame = document.createElement("span");
+    frame.className = "dg-math-frame";
+    box.parentNode.insertBefore(frame, box);
+    frame.appendChild(box);
+    ["left", "right"].forEach(function (side) {
+      var fade = document.createElement("span");
+      fade.className = "dg-math-fade dg-math-fade-" + side;
+      fade.setAttribute("aria-hidden", "true");
+      frame.appendChild(fade);
+    });
+    box.addEventListener("scroll", function () { markFades(frame, box); }, { passive: true });
+    return frame;
+  }
+
+  function releaseFrame(box) {
+    var frame = box.parentElement;
+    if (!frame || !frame.classList.contains("dg-math-frame")) return;
+    frame.parentNode.insertBefore(box, frame);
+    frame.remove();
+  }
+
+  function pageBackground() {
+    var el = document.querySelector(".content") || document.body;
+    var bg = "transparent";
+    while (el) {
+      bg = getComputedStyle(el).backgroundColor;
+      if (bg && bg !== "transparent" && bg !== "rgba(0, 0, 0, 0)") return bg;
+      el = el.parentElement;
+    }
+    return getComputedStyle(document.body).backgroundColor;
+  }
+
+  function pinFormulaLeft(box) {
+    if (box.dataset.dgPinned) return;
+    box.scrollLeft = 0;
+    var svg = box.querySelector("svg");
+    if (svg) {
+      var gap = svg.getBoundingClientRect().left - box.getBoundingClientRect().left;
+      if (gap > 1) box.scrollLeft = gap;
+    }
+    box.dataset.dgPinned = "1";
+  }
+
+  function syncMobileMath() {
+    var compact = window.matchMedia("(max-width: 1000px)").matches;
+    if (compact) {
+      document.documentElement.style.setProperty("--dg-fade-bg", pageBackground());
+    }
+    document.querySelectorAll(".content mjx-container").forEach(function (box) {
+      if (!box.querySelector("svg")) return;
+      if (!compact || !formulaOverflows(box)) {
+        box.classList.remove("dg-math-xscroll");
+        delete box.dataset.dgPinned;
+        releaseFrame(box);
+        return;
+      }
+      var frame = ensureFrame(box);
+      frame.classList.toggle("dg-math-frame-block", box.getAttribute("display") === "true");
+      box.classList.add("dg-math-xscroll");
+      pinFormulaLeft(box);
+      markFades(frame, box);
+    });
   }
 
   document.querySelectorAll("mjx-container svg").forEach(function (svg) {
@@ -133,5 +255,17 @@
     groups.forEach(function (group) { reflowGroup(group, widths.get(group)); });
   });
   document.documentElement.classList.remove("dg-math-pending");
+  syncMobileMath();
+  window.addEventListener("resize", function () {
+    window.requestAnimationFrame(syncMobileMath);
+  });
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () {
+      document.querySelectorAll(".content mjx-container").forEach(function (box) {
+        delete box.dataset.dgPinned;
+      });
+      syncMobileMath();
+    });
+  }
 })();
 </script>
