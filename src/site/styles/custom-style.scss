@@ -306,24 +306,34 @@ button.deadline-table-open {
     text-align: center;
 }
 
-.deadline-table-close {
+button.deadline-table-close,
+button.deadline-table-close:hover,
+button.deadline-table-close:focus,
+button.deadline-table-close:focus-visible,
+button.deadline-table-close:active,
+button.deadline-table-close.mobile-tap {
     position: absolute;
     top: 50%;
     right: 14px;
     transform: translateY(-50%);
     border: 0;
-    background: none;
+    background: transparent;
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
     color: var(--text-muted);
     font: inherit;
     font-size: 1.4rem;
     line-height: 1;
     cursor: pointer;
     padding: 0 4px;
+    height: auto;
+}
 
-    &:hover,
-    &:focus-visible {
-        color: var(--text-normal);
-    }
+button.deadline-table-close:hover,
+button.deadline-table-close:focus,
+button.deadline-table-close:focus-visible {
+    color: var(--text-normal);
 }
 
 body:has(#dg-deadline-table) {
