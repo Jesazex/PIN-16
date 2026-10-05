@@ -174,9 +174,16 @@
     return svg.getBoundingClientRect().width > host.clientWidth + 4;
   }
 
+  function pinOrigin(box) {
+    var origin = parseFloat(box.dataset.dgPinOrigin || "");
+    return origin === origin ? origin : 0;
+  }
+
   function markFades(frame, box) {
     var hidden = box.scrollWidth - box.clientWidth;
-    frame.classList.toggle("dg-math-can-left", box.scrollLeft > 2);
+    // The pinned offset is the start of the formula. Padding or a centering
+    // spacer can sit before it, and that must not look like a left scroll.
+    frame.classList.toggle("dg-math-can-left", box.scrollLeft > pinOrigin(box) + 2);
     frame.classList.toggle("dg-math-can-right", hidden - box.scrollLeft > 2);
   }
 
@@ -217,11 +224,16 @@
 
   function pinFormulaLeft(box) {
     if (box.dataset.dgPinned) return;
+    box.dataset.dgPinOrigin = "0";
     box.scrollLeft = 0;
     var svg = box.querySelector("svg");
     if (svg) {
       var gap = svg.getBoundingClientRect().left - box.getBoundingClientRect().left;
-      if (gap > 1) box.scrollLeft = gap;
+      if (gap > 1) {
+        box.dataset.dgPinOrigin = String(gap);
+        box.scrollLeft = gap;
+        box.dataset.dgPinOrigin = String(box.scrollLeft);
+      }
     }
     box.dataset.dgPinned = "1";
   }
@@ -236,6 +248,7 @@
       if (!compact || !formulaOverflows(box)) {
         box.classList.remove("dg-math-xscroll");
         delete box.dataset.dgPinned;
+        delete box.dataset.dgPinOrigin;
         releaseFrame(box);
         return;
       }
@@ -263,6 +276,7 @@
     document.fonts.ready.then(function () {
       document.querySelectorAll(".content mjx-container").forEach(function (box) {
         delete box.dataset.dgPinned;
+        delete box.dataset.dgPinOrigin;
       });
       syncMobileMath();
     });
