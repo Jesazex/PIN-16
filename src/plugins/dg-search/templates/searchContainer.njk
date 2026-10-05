@@ -45,10 +45,24 @@
     // Preview content cache
     const previewCache = new Map();
 
+    function clearSearchQuery() {
+        const field = document.getElementById('term');
+        if (field) field.value = '';
+        const results = document.getElementById('search-results');
+        if (results) results.innerHTML = `<span><i>{{ meta.uiStrings.searchNotStarted }}</i></span>`;
+        const layout = document.getElementById('search-layout');
+        if (layout) layout.classList.add('no-preview');
+        if (typeof hidePreview === 'function') hidePreview();
+        window.lastSearch = '';
+        window.searchResults = [];
+        window.searchTerms = [];
+    }
+
     window.toggleSearch = function () {
         const searchContainer = document.getElementById('globalsearch');
         if (searchContainer.classList.contains('active')) {
             searchContainer.classList.remove('active');
+            clearSearchQuery();
         } else {
             searchContainer.classList.add('active');
             document.getElementById('term').focus();
@@ -347,7 +361,11 @@
                 toggleSearch();
             }
             if (e.key === 'Escape') {
-                document.getElementById('globalsearch').classList.remove('active');
+                const searchContainer = document.getElementById('globalsearch');
+                if (searchContainer && searchContainer.classList.contains('active')) {
+                    searchContainer.classList.remove('active');
+                    clearSearchQuery();
+                }
             }
 
             // Navigate search results with arrow keys
