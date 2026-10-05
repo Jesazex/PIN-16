@@ -43,7 +43,9 @@ function prefixRootUrls(text, prefix) {
     .slice(1)
     .replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const skip = `(?!\\/|${token}\\/)`;
-  const quoted = new RegExp(`(?<=["'(])\\/${skip}`, "g");
+  // Only quotes. A slash after "(" is a JavaScript regexp (`match(/^На/)`,
+  // `replace(/\s+/)`), not a URL. CSS `url(/img)` is handled separately.
+  const quoted = new RegExp(`(?<=["'])\\/${skip}`, "g");
   const afterComma = new RegExp(`(?<=,\\s*)\\/${skip}`, "g");
   const cssUrl = new RegExp(`(?<=url\\(\\s*)\\/${skip}`, "g");
   return text

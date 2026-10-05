@@ -47,6 +47,16 @@ describe("prefixRootUrls", () => {
     );
   });
 
+  it("does not rewrite JavaScript regular expressions", () => {
+    const input = [
+      '.match(/^На\\s+(\\d{1,2})\\s+([А-Яа-яёЁ]+)\\s*$/i)',
+      '.replace(/\\u00a0/g, " ")',
+      '.match(/translate\\(\\s*(-?[\\d.]+)/)',
+      '.split(/[\\s,]+/)',
+    ].join("\n");
+    expect(prefixRootUrls(input, prefix)).toBe(input);
+  });
+
   it("does not prefix protocol-relative urls, absolute urls, or css ratios", () => {
     const input = 'src="//cdn.example/a.js" href="https://example.com/a" font: 16px / 1.5;';
     expect(prefixRootUrls(input, prefix)).toBe(input);
