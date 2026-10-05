@@ -58,7 +58,7 @@
 <script defer src="{{script}}?v={{meta.buildDate|isoDate}}"></script>
 {%- endfor -%}
 
-{% favicons './src/site/favicon.png', appleIconBgColor='#ffffff' %}
+{% favicons './src/site/favicon.png', appleIconBgColor='transparent' %}
 
 {% if meta.styleSettingsCss %}
     <style>
