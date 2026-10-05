@@ -80,11 +80,11 @@
             try {
                   const value = sessionStorage.getItem(key);
                   if (value === null) {
-                        return isCompact();
+                        return true;
                   }
                   return value === '1';
             } catch {
-                  return isCompact();
+                  return true;
             }
       }
 

@@ -50,8 +50,8 @@
             var compact = window.matchMedia('(max-width: 1000px)').matches;
             var leftRaw = sessionStorage.getItem(LEFT_KEY);
             var rightRaw = sessionStorage.getItem(RIGHT_KEY);
-            var leftCollapsed = leftRaw === null ? compact : leftRaw === '1';
-            var rightCollapsed = rightRaw === null ? compact : rightRaw === '1';
+            var leftCollapsed = leftRaw !== '0';
+            var rightCollapsed = rightRaw !== '0';
             // Mobile: only one panel open at a time.
             if (compact && !leftCollapsed && !rightCollapsed) {
                   rightCollapsed = true;
