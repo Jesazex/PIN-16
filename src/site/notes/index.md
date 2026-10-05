@@ -1,5 +1,5 @@
 ---
-{"dg-publish":true,"permalink":"/dobro-pozhalovat/","tags":["gardenEntry"],"dg-note-properties":{}}
+{"dg-publish":true,"permalink":"/","title":"Добро пожаловать!","tags":["gardenEntry"],"dg-note-properties":{}}
 ---
 
 Здесь вы найдете конспекты всех (или почти всех) лекций, а также другую полезную информацию
