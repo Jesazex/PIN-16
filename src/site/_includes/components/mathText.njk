@@ -44,6 +44,23 @@
     if (width) svg.setAttribute("width", Math.max(0.1, width - delta * unit).toFixed(3) + "ex");
   }
 
+  // These parents stack their children. A narrower \text{} must not slide
+  // the next row sideways — that is what carried the 0 of a cases block
+  // out past the brace.
+  var stackedNode = {
+    mtable: 1,
+    mtr: 1,
+    mlabeledtr: 1,
+    mfrac: 1,
+    munder: 1,
+    mover: 1,
+    munderover: 1,
+    msub: 1,
+    msup: 1,
+    msubsup: 1,
+    mmultiscripts: 1
+  };
+
   function shiftFollowing(el, delta) {
     if (!el || !delta) return;
     var parent = el.parentElement;
@@ -51,6 +68,7 @@
       if (parent && parent.localName === "svg") shrinkSvg(parent, delta);
       return;
     }
+    if (stackedNode[parent.getAttribute("data-mml-node")]) return;
     var sib = el.nextElementSibling;
     while (sib) {
       setTranslateX(sib, translateX(sib) - delta);
