@@ -4,13 +4,10 @@ const matter = require("gray-matter");
 // See src/helpers/matterOptions.js for why frontmatter needs a custom YAML engine.
 const matterOptions = require("./src/helpers/matterOptions");
 const faviconsPlugin = require("eleventy-plugin-gen-favicons");
-const normalizeFavicon = require("./src/site/normalize-favicon.js");
 const { convertMdHrefs } = require("./src/helpers/linkUtils");
 const nodePath = require("path");
 
-const FAVICON_SOURCE = "./src/site/favicon.svg";
-const FAVICON_NORMALIZED = "./.cache/favicon.normalized.svg";
-normalizeFavicon(FAVICON_SOURCE, FAVICON_NORMALIZED);
+const FAVICON_SOURCE = "./src/site/favicon.png";
 const tocPlugin = require("eleventy-plugin-nesting-toc");
 const { parse } = require("node-html-parser");
 const htmlMinifier = require("html-minifier-terser");
@@ -848,7 +845,6 @@ module.exports = function(eleventyConfig) {
   eleventyConfig.addPassthroughCopy("src/site/styles/_theme.*.css");
   eleventyConfig.addPassthroughCopy({ "src/site/logo.*": "/" });
   eleventyConfig.on("eleventy.before", () => {
-    normalizeFavicon(FAVICON_SOURCE, FAVICON_NORMALIZED);
     anchorAttributesCache.clear();
   });
   eleventyConfig.on("eleventy.after", async () => {
