@@ -54,9 +54,33 @@ function prefixRootUrls(text, prefix) {
     .replace(cssUrl, `${normalized}/`);
 }
 
-function applyPathPrefix(dir, prefix) {
+const ICON_NAMES = [
+  ["favicon.ico", "favicon"],
+  ["apple-touch-icon.png", "apple-touch-icon"],
+  ["icon-192.png", "icon-192"],
+  ["icon-512.png", "icon-512"],
+];
+
+/**
+ * Point icon links at a new filename. Browsers keep the old favicon for a
+ * stable `/favicon.ico` address even after the file bytes change.
+ */
+function versionIconUrls(text, version) {
+  if (!version || typeof text !== "string" || !text) return text;
+  let next = text;
+  for (const [fileName, stem] of ICON_NAMES) {
+    const ext = path.extname(fileName);
+    next = next.replace(
+      new RegExp(`/${stem}\\${ext}(?!-)`, "g"),
+      `/${stem}-${version}${ext}`
+    );
+  }
+  return next;
+}
+
+function applyPathPrefix(dir, prefix, iconVersion) {
   const normalized = normalizePrefix(prefix);
-  if (!normalized || !fs.existsSync(dir)) return 0;
+  if (!fs.existsSync(dir)) return 0;
   let changed = 0;
 
   function walk(current) {
@@ -68,7 +92,8 @@ function applyPathPrefix(dir, prefix) {
       }
       if (!PREFIXABLE.has(path.extname(entry.name).toLowerCase())) continue;
       const original = fs.readFileSync(full, "utf8");
-      const next = prefixRootUrls(original, normalized);
+      let next = prefixRootUrls(original, normalized);
+      next = versionIconUrls(next, iconVersion);
       if (next !== original) {
         fs.writeFileSync(full, next);
         changed += 1;
@@ -77,7 +102,15 @@ function applyPathPrefix(dir, prefix) {
   }
 
   walk(dir);
+  if (iconVersion) {
+    for (const [fileName, stem] of ICON_NAMES) {
+      const from = path.join(dir, fileName);
+      if (!fs.existsSync(from)) continue;
+      const ext = path.extname(fileName);
+      fs.copyFileSync(from, path.join(dir, `${stem}-${iconVersion}${ext}`));
+    }
+  }
   return changed;
 }
 
-module.exports = { normalizePrefix, prefixRootUrls, applyPathPrefix };
+module.exports = { normalizePrefix, prefixRootUrls, versionIconUrls, applyPathPrefix };

@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const fs = require("fs");
 const { applyPathPrefix } = require("./pathPrefix");
 
@@ -8,7 +9,11 @@ if (!fs.existsSync(outDir)) {
   process.exit(0);
 }
 
-const changed = applyPathPrefix(outDir, process.env.PATH_PREFIX);
+const iconFile = "src/site/favicon.png";
+const iconVersion = fs.existsSync(iconFile)
+  ? crypto.createHash("sha256").update(fs.readFileSync(iconFile)).digest("hex").slice(0, 8)
+  : "";
+const changed = applyPathPrefix(outDir, process.env.PATH_PREFIX, iconVersion);
 fs.writeFileSync(`${outDir}/.nojekyll`, "");
 if (changed) {
   console.log(`[pages] Prefixed root urls in ${changed} files (${process.env.PATH_PREFIX})`);

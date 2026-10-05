@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizePrefix, prefixRootUrls } from "./pathPrefix.js";
+import { normalizePrefix, prefixRootUrls, versionIconUrls } from "./pathPrefix.js";
 
 describe("normalizePrefix", () => {
   it("treats an empty prefix as the domain root", () => {
@@ -70,5 +70,19 @@ describe("prefixRootUrls", () => {
   it("returns the text unchanged when there is no prefix", () => {
     const input = 'href="/styles/custom-style.css"';
     expect(prefixRootUrls(input, "")).toBe(input);
+  });
+});
+
+describe("versionIconUrls", () => {
+  it("gives the tab icon a new address when the picture changes", () => {
+    const input = '<link rel="icon" href="/pin16/favicon.ico" sizes="any">';
+    expect(versionIconUrls(input, "abc123")).toBe(
+      '<link rel="icon" href="/pin16/favicon-abc123.ico" sizes="any">'
+    );
+  });
+
+  it("leaves ordinary links alone", () => {
+    const input = 'href="/pin16/lekczii/"';
+    expect(versionIconUrls(input, "abc123")).toBe(input);
   });
 });
