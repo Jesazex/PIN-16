@@ -455,6 +455,30 @@ main.content > hr.dg-deadline-divider {
     }
 }
 
+// Outline rows repeat the heading, including its rendered formula. Keep that
+// formula on the row and let a wide one scroll inside the panel instead of
+// being clipped by the page.
+.toc-container mjx-container {
+    position: relative;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    white-space: nowrap;
+    scrollbar-width: thin;
+}
+
+.toc-container mjx-assistive-mml {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
 // Default article gutters (room for corner Show buttons). Pinned-open
 // panels on desktop widen these margins; hover-peek does not.
 .content:not(.canvas-page) {

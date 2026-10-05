@@ -14,7 +14,7 @@
                         {% include imp %}
                   {% endfor %}
                   {%if settings.dgShowToc === true%}
-                        {%set tocHtml= (content and (content | hideDataview | link | toc)) %}
+                        {%set tocHtml= (content and (content | hideDataview | link | tocMarkup)) %}
                         {%if tocHtml %}
                               <div class="toc">
                                     <div class="toc-title-container">

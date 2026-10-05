@@ -9,6 +9,7 @@ const nodePath = require("path");
 
 const FAVICON_SOURCE = "./src/site/favicon.png";
 const tocPlugin = require("eleventy-plugin-nesting-toc");
+const { tocMarkup } = require("./src/helpers/tocMarkup");
 const { parse } = require("node-html-parser");
 const htmlMinifier = require("html-minifier-terser");
 const pluginRss = require("@11ty/eleventy-plugin-rss");
@@ -861,6 +862,11 @@ module.exports = function(eleventyConfig) {
     ul: true,
     tags: ["h1", "h2", "h3", "h4", "h5", "h6"],
   });
+  // Outline entries keep MathJax markup from the headings. The nesting-toc
+  // filter above stays for anything that still wants a plain-text outline.
+  eleventyConfig.addFilter("tocMarkup", (content) =>
+    tocMarkup(content, { tags: ["h1", "h2", "h3", "h4", "h5", "h6"] })
+  );
 
   // Canvas files are pre-compiled HTML by the plugin - don't process as markdown
   eleventyConfig.addExtension("canvas", {
